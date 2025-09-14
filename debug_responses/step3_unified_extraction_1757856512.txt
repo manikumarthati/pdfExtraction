@@ -1,0 +1,11 @@
+=== STEP 3 UNIFIED SCHEMA-BASED EXTRACTION ===
+Timestamp: 2025-09-14 18:58:32
+Field mapping keys: ['form_fields', 'tables', 'summary', 'field_type', 'notes', 'human_validated', 'validation_timestamp']
+Form fields count: 47
+Tables count: 7
+User feedback provided: False
+==================================================
+COMPLETE SCHEMA:
+Form Fields: ['Employee Name', 'Emp Id', 'Status', 'Emp Type', 'Home #', 'SSN', 'Position', 'Work #', 'DOB', 'Title', 'Ext.', 'Gender', 'Pay Group', 'Domestic Emp', 'Email', 'Marital Status', 'Job Code', 'Mail Stop', 'Hire Date', 'Visa Type', 'Tax Form', 'Union', 'Nickname', 'Rehire Date', 'Exp', 'WCC', 'Union Date', 'Surname', 'Term Date', 'Citizen', 'EEOC', 'Collect Dues', 'Prior Last', 'Term Reason', 'I9 Verified', 'Supervisor ID', 'Paid Init. Fees', 'Disability', 'Adj Sen Date', 'I9 Reverify', 'Name', 'Veteran', 'Smoker', 'Pension', 'Deceased', 'Def Comp', 'Legal Rep']
+Tables: [{'table_name': 'Rate/Salary Information', 'headers': ['RateCode', 'Description', 'Rate', 'Salary', 'Effective Dates']}, {'table_name': 'Tax Information', 'headers': ['Employee Tax', 'Status', "Add'l Amount", 'Effective Dates', 'Default']}, {'table_name': 'Employer Tax', 'headers': ['Effective', 'Dates', 'Default']}, {'table_name': 'Deduction Information', 'headers': ['Code', 'Deduction', 'Rate', 'CalcCode', 'Frequency', 'Goal/Paid', 'Min/Max/Annual Max', 'Arrears', 'Agency', 'Effective Dates']}, {'table_name': 'Direct Deposit Information', 'headers': ['Sequence No.', 'Transit No.', 'Account No.', 'Checking?', 'Account Name', 'Amount Code', 'Amount', 'Prenote Date', 'Effective Dates', 'Exclude Special']}, {'table_name': 'Fringe Benefit Information', 'headers': ['ECode', 'CalcCode', 'Rate Code', 'Rate', 'Rate Per', 'Amount Tabled?', 'Units', 'Frequency', 'Goal/Paid/Goal Bal.', 'Min/Max/Ann. Max', 'Effective Dates']}, {'table_name': 'Benefit Accrual Information', 'headers': ['BCode', 'Rate', 'Amount', 'Hours', 'Max/Carryover Max', 'Length of Service', 'Hours: Used/Avail/Total/Prob', 'Dollars: Used/Avail/Total/Prob', 'Effective Dates']}]
+==================================================

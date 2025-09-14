@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Cost Dashboard - PDF Processing System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-line"></i> Cost Tracking Dashboard</h2>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Session Summary -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock"></i> Current Session
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-primary">${{ "%.6f"|format(session_summary.total_cost) }}</h4>
+                        <small>Total Cost</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-info">{{ session_summary.total_tokens }}</h4>
+                        <small>Total Tokens</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success">{{ session_summary.requests }}</h4>
+                        <small>Requests</small>
+                    </div>
+                </div>
+                
+                {% if session_summary.task_breakdown %}
+                <h6 class="mt-4">Task Breakdown:</h6>
+                {% for task, data in session_summary.task_breakdown.items() %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ task|title }}:</span>
+                    <div class="text-end">
+                        <span class="text-muted">${{ "%.6f"|format(data.cost) }}</span>
+                        <small class="text-muted">({{ data.requests }} req)</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Analysis -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-week"></i> Last 7 Days
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if cost_analysis.error %}
+                    <p class="text-muted">{{ cost_analysis.error }}</p>
+                {% else %}
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">${{ "%.6f"|format(cost_analysis.total_cost) }}</h4>
+                            <small>Total Cost</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ cost_analysis.total_tokens }}</h4>
+                            <small>Total Tokens</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ cost_analysis.total_requests }}</h4>
+                            <small>Requests</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Average: ${{ "%.6f"|format(cost_analysis.average_cost_per_request) }} per request
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Usage Breakdown -->
+{% if cost_analysis and not cost_analysis.error and cost_analysis.model_breakdown %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-robot"></i> Model Usage Breakdown
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Requests</th>
+                                <th>Tokens</th>
+                                <th>Cost</th>
+                                <th>Avg Cost/Request</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model, data in cost_analysis.model_breakdown.items() %}
+                            <tr>
+                                <td>{{ model }}</td>
+                                <td>{{ data.requests }}</td>
+                                <td>{{ data.tokens }}</td>
+                                <td>${{ "%.6f"|format(data.cost) }}</td>
+                                <td>${{ "%.6f"|format(data.cost / data.requests) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Task Usage Breakdown -->
+{% if cost_analysis and not cost_analysis.error and cost_analysis.task_breakdown %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks"></i> Task Usage Breakdown
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Requests</th>
+                                <th>Tokens</th>
+                                <th>Cost</th>
+                                <th>Avg Cost/Request</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task, data in cost_analysis.task_breakdown.items() %}
+                            <tr>
+                                <td>{{ task|title|replace('_', ' ') }}</td>
+                                <td>{{ data.requests }}</td>
+                                <td>{{ data.tokens }}</td>
+                                <td>${{ "%.6f"|format(data.cost) }}</td>
+                                <td>${{ "%.6f"|format(data.cost / data.requests) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Optimization Suggestions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb"></i> Cost Optimization Suggestions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if suggestions %}
+                    <ul class="list-unstyled">
+                        {% for suggestion in suggestions %}
+                            <li class="mb-2">
+                                <i class="fas fa-arrow-right text-primary"></i>
+                                {{ suggestion }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No suggestions available yet. Process some documents to get personalized recommendations.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Configuration -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs"></i> Current Model Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="cost-info">
+                            <strong>Structure Classification</strong><br>
+                            <small>Model: gpt-3.5-turbo</small><br>
+                            <small>Reason: Simple task, cost-optimized</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="cost-info">
+                            <strong>Field Identification</strong><br>
+                            <small>Model: gpt-4o-mini</small><br>
+                            <small>Reason: Medium complexity</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="cost-info">
+                            <strong>Data Extraction</strong><br>
+                            <small>Model: gpt-4o</small><br>
+                            <small>Reason: Accuracy critical</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

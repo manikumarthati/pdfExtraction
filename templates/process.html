@@ -1,0 +1,2342 @@
+{% extends "base.html" %}
+
+{% block title %}Process Document - PDF Processing System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-pdf"></i> Processing: {{ document.filename.split('_', 2)[2] if '_' in document.filename else document.filename }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Step Indicator -->
+                <div class="step-indicator mb-4">
+                    <div class="step {{ 'completed' if (step_status and step_status.get('step1_status') != 'pending') else ('active' if current_step == 1 else 'pending') }}"
+                         style="cursor: pointer;" onclick="goToStep(1)">
+                        <i class="fas fa-search"></i><br>
+                        Step 1: Structure Analysis
+                        {% if step_status and step_status.get('step1_status') == 'validated' %}
+                            <br><small class="text-success">✓ Validated</small>
+                        {% elif step_status and step_status.get('step1_status') == 'completed' %}
+                            <br><small class="text-warning">● Completed</small>
+                        {% endif %}
+                    </div>
+                    <div class="step {{ 'completed' if (step_status and step_status.get('step2_status') != 'pending') else ('active' if current_step == 2 else 'pending') }}"
+                         style="cursor: {{ 'pointer' if (step_accessibility and step_accessibility.get('step2_accessible')) else 'not-allowed' }};"
+                         onclick="{{ 'goToStep(2)' if (step_accessibility and step_accessibility.get('step2_accessible')) else '' }}">
+                        <i class="fas fa-tags"></i><br>
+                        Step 2: Field Identification
+                        {% if step_status and step_status.get('step2_status') == 'validated' %}
+                            <br><small class="text-success">✓ Validated</small>
+                        {% elif step_status and step_status.get('step2_status') == 'completed' %}
+                            <br><small class="text-warning">● Completed</small>
+                        {% endif %}
+                    </div>
+                    <div class="step {{ 'completed' if (step_status and step_status.get('step3_status') != 'pending') else ('active' if current_step == 3 else 'pending') }}"
+                         style="cursor: {{ 'pointer' if (step_accessibility and step_accessibility.get('step3_accessible')) else 'not-allowed' }};"
+                         onclick="{{ 'goToStep(3)' if (step_accessibility and step_accessibility.get('step3_accessible')) else '' }}">
+                        <i class="fas fa-download"></i><br>
+                        Step 3: Data Extraction
+                        {% if step_status and step_status.get('step3_status') == 'validated' %}
+                            <br><small class="text-success">✓ Validated</small>
+                        {% elif step_status and step_status.get('step3_status') == 'completed' %}
+                            <br><small class="text-warning">● Completed</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Step Access -->
+                <div class="alert alert-info mb-3">
+                    <strong>Quick Navigation:</strong>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="goToStep(1)">
+                            Step 1 {% if step_status and step_status.get('step1_status') == 'validated' %}✓{% elif step_status and step_status.get('step1_status') == 'completed' %}●{% endif %}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                onclick="goToStep(2)" {{ 'disabled' if not (step_accessibility and step_accessibility.get('step2_accessible')) else '' }}>
+                            Step 2 {% if step_status and step_status.get('step2_status') == 'validated' %}✓{% elif step_status and step_status.get('step2_status') == 'completed' %}●{% endif %}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                onclick="goToStep(3)" {{ 'disabled' if not (step_accessibility and step_accessibility.get('step3_accessible')) else '' }}>
+                            Step 3 {% if step_status and step_status.get('step3_status') == 'validated' %}✓{% elif step_status and step_status.get('step3_status') == 'completed' %}●{% endif %}
+                        </button>
+                    </div>
+                    <small class="d-block mt-1">
+                        ✓ = Validated, ● = Completed (can be re-run), Empty = Pending
+                    </small>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        {% if current_step > 1 %}
+                            <button class="btn btn-outline-secondary" onclick="goToStep({{ current_step - 1 }})">
+                                <i class="fas fa-arrow-left"></i> Previous Step
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <span class="badge bg-info">Step {{ current_step }} of 3</span>
+                    </div>
+                    <div>
+                        {% if current_step < 3 and ((current_step == 1 and step_results.step1 and step_results.step1.human_validated) or (current_step == 2 and step_results.step2 and step_results.step2.human_validated)) %}
+                            <button class="btn btn-outline-primary" onclick="goToStep({{ current_step + 1 }})">
+                                Next Step <i class="fas fa-arrow-right"></i>
+                            </button>
+                        {% elif current_step == 3 and step_results.step3 and step_results.step3.human_validated %}
+                            <a href="{{ url_for('download_result', doc_id=document.id) }}" class="btn btn-success">
+                                <i class="fas fa-download"></i> Download Result
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Step 1: Structure Classification -->
+                <div class="card mb-3" id="step1-card" style="{{ 'display: none;' if current_step != 1 }}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Step 1: Structure Classification</h6>
+                        <div>
+                            {% if document %}
+                            <button class="btn btn-sm btn-outline-info me-2" onclick="showPreprocessingPreview()" title="Preview how the document will be formatted for field extraction">
+                                <i class="fas fa-eye"></i> Preview Processing
+                            </button>
+                            {% endif %}
+                            {% if step_results.step1 %}
+                                <span class="badge bg-success">Completed</span>
+                            {% else %}
+                                <button class="btn btn-primary btn-sm" onclick="runStep1()" id="step1-btn">
+                                    <i class="fas fa-play"></i> Analyze Structure
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if step_results.step1 %}
+                            <div class="result-display">
+                                <strong>Classification:</strong> {{ step_results.step1.classification|title }}<br>
+                                <strong>Confidence:</strong> {{ (step_results.step1.confidence * 100)|round|int }}%<br>
+                                <strong>Reasoning:</strong> {{ step_results.step1.reasoning }}
+                                
+                                {% if not step_results.step1.human_validated %}
+                                <div class="validation-panel mt-3">
+                                    <h6>Please validate this classification:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-select" id="classification-correction">
+                                                <option value="form" {{ 'selected' if step_results.step1.classification == 'form' }}>Form</option>
+                                                <option value="table" {{ 'selected' if step_results.step1.classification == 'table' }}>Table</option>
+                                                <option value="mixed" {{ 'selected' if step_results.step1.classification == 'mixed' }}>Mixed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button class="btn btn-success" onclick="validateStep1()">
+                                                <i class="fas fa-check"></i> Validate & Continue
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                    <div class="alert alert-success mt-2">
+                                        <i class="fas fa-check-circle"></i> Human validated
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Click "Analyze Structure" to begin processing.</p>
+                        {% endif %}
+                        <div id="step1-progress" style="display:none;">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status"></div>
+                                <p class="mt-2">Analyzing document structure...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Field Identification -->
+                <div class="card mb-3" id="step2-card" style="{{ 'display: none;' if current_step != 2 }}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Step 2: Field Identification</h6>
+                        {% if step_results.step2 %}
+                            <span class="badge bg-success">Completed</span>
+                        {% else %}
+                            <div class="mb-2">
+                                <label class="form-label small">Processing Mode:</label>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="preprocessing-mode" id="mode-original" value="original" checked>
+                                    <label class="btn btn-outline-secondary" for="mode-original">
+                                        <i class="fas fa-file-text"></i> Original
+                                    </label>
+                                    <input type="radio" class="btn-check" name="preprocessing-mode" id="mode-spatial" value="spatial">
+                                    <label class="btn btn-outline-secondary" for="mode-spatial">
+                                        <i class="fas fa-map-marked-alt"></i> Spatial
+                                    </label>
+                                    <input type="radio" class="btn-check" name="preprocessing-mode" id="mode-vision" value="vision">
+                                    <label class="btn btn-outline-secondary" for="mode-vision">
+                                        <i class="fas fa-eye"></i> Vision
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="runStep2()" id="step2-btn" 
+                                    {{ 'disabled' if not step_results.step1 or not step_results.step1.human_validated }}>
+                                <i class="fas fa-play"></i> Identify Fields
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if step_results.step2 %}
+                            <div class="row">
+                                <!-- PDF Viewer Column -->
+                                <div class="col-md-6">
+                                    <h6>PDF Preview:</h6>
+                                    <div id="pdf-container" style="border: 1px solid #ddd; height: 600px; overflow: auto;">
+                                        <embed src="/uploads/{{ document.filename }}" type="application/pdf" width="100%" height="100%">
+                                    </div>
+                                </div>
+                                
+                                <!-- JSON Editor Column -->
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6><i class="fas fa-edit"></i> Edit Fields:</h6>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-info me-1" onclick="showPreprocessingPreview()">
+                                                <i class="fas fa-eye"></i> Preview LLM Input
+                                            </button>
+                                            <button class="btn btn-sm btn-secondary me-1" onclick="resetJsonEditor()" title="Reset to original">
+                                                <i class="fas fa-undo"></i> Reset
+                                            </button>
+                                            <button class="btn btn-sm btn-warning me-1" onclick="validateJsonSyntax()" title="Check JSON syntax">
+                                                <i class="fas fa-check"></i> Validate
+                                            </button>
+                                            <button class="btn btn-sm btn-info me-1" onclick="formatJson()" title="Auto-format JSON">
+                                                <i class="fas fa-magic"></i> Format
+                                            </button>
+                                            <button class="btn btn-sm btn-primary" onclick="saveJsonEdits()" title="Save changes">
+                                                <i class="fas fa-save"></i> Save Changes
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if step_results.step2.error %}
+                                        <div class="alert alert-warning mb-2">
+                                            <strong>Error:</strong> {{ step_results.step2.error }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if document.step2_validated_json %}
+                                        <div class="alert alert-success mb-2">
+                                            <i class="fas fa-check-circle"></i> <strong>Validated Fields</strong> - These are your confirmed extractions
+                                        </div>
+                                        <textarea class="form-control font-monospace" id="json-editor" rows="25" readonly
+                                                style="font-size: 12px; background-color: #f0f8f0;">{{ document.step2_validated_json | tojson(indent=2) }}</textarea>
+                                    {% else %}
+                                        <div class="alert alert-info mb-2">
+                                            <small><i class="fas fa-info-circle"></i> Edit the JSON below to correct field names and values. Changes are saved when you click "Save Changes".</small>
+                                        </div>
+                                        <textarea class="form-control font-monospace" id="json-editor" rows="25" 
+                                                style="font-size: 12px;">{{ step_results.step2 | tojson(indent=2) if step_results.step2 else '{}' }}</textarea>
+                                    {% endif %}
+                                    
+                                    <div class="text-end mt-2">
+                                        <small class="text-muted">Use proper JSON format. Field names and values should be in quotes.</small>
+                                    </div>
+                                    
+                                    <!-- Hidden element for JavaScript to reference original JSON -->
+                                    <pre id="json-content" style="display: none;">{{ step_results.step2 | tojson(indent=2) if step_results.step2 else '{}' }}</pre>
+                                </div> <!-- Close col-md-6 -->
+                            </div> <!-- Close row -->
+                                
+                            {% if not document.step2_validated_json %}
+                            <div class="validation-panel mt-3">
+                                <h6>Field Refinement & Validation:</h6>
+                                <div class="alert alert-info">
+                                    <strong>Review the PDF and identified fields:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>✅ Uncheck any incorrectly identified fields</li>
+                                        <li>📝 Provide feedback to improve extraction</li>
+                                        <li>🔄 Iterate until results are accurate</li>
+                                        <li>✅ Validate when satisfied with results</li>
+                                    </ul>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fields-correction" class="form-label">
+                                        Feedback for extraction improvement:
+                                        <small class="text-muted">(Natural language instructions)</small>
+                                    </label>
+                                    <textarea class="form-control" id="fields-correction" rows="4" 
+                                            placeholder="Examples:&#10;- Add missing field: 'Employee ID' which appears near the top&#10;- Remove 'Total' - this is not a field, it's a calculation&#10;- The table has two sections: payroll info and tax info&#10;- 'Department' field value is actually 'Engineering'&#10;- Separate the address into Street, City, State fields"></textarea>
+                                </div>
+                                
+                                <!-- Iteration tracking -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <small class="text-muted">
+                                        Refinement iteration: {{ step_results.step2.extraction_summary.refinement_iteration if step_results.step2.extraction_summary and step_results.step2.extraction_summary.refinement_iteration else 1 }}
+                                    </small>
+                                    <div>
+                                        <button class="btn btn-secondary me-2" onclick="reRunStep2()" id="rerun-step2-btn">
+                                            <i class="fas fa-redo"></i> Re-run
+                                        </button>
+                                        <button class="btn btn-warning me-2" onclick="refineStep2()" id="refine-btn">
+                                            <i class="fas fa-sync"></i> Refine with Feedback
+                                        </button>
+                                        <button class="btn btn-success" onclick="validateStep2()">
+                                            <i class="fas fa-check"></i> Validate & Continue
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Feedback history -->
+                                <div id="feedback-history" style="display: none;">
+                                    <div class="alert alert-secondary">
+                                        <h6>Previous feedback applied:</h6>
+                                        <p id="feedback-response" class="mb-0"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                                <div class="validation-panel mt-3">
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle"></i> <strong>Step 2 Validated!</strong> 
+                                        Your field extraction has been confirmed and saved.
+                                    </div>
+                                    <div class="text-center">
+                                        <button class="btn btn-warning" onclick="revalidateStep2()">
+                                            <i class="fas fa-edit"></i> Re-validate Structure
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted">Complete Step 1 validation to proceed.</p>
+                        {% endif %}
+                        <div id="step2-progress" style="display:none;">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status"></div>
+                                <p class="mt-2">Identifying fields and headers...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Data Extraction -->
+                <div class="card mb-3" id="step3-card" style="{{ 'display: none;' if current_step != 3 }}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Step 3: Data Extraction</h6>
+                        {% if step_results.step3 %}
+                            <span class="badge bg-success">Completed</span>
+                        {% else %}
+                            <button class="btn btn-primary btn-sm" onclick="runStep3()" id="step3-btn"
+                                    {{ 'disabled' if not step_results.step2 or not step_results.step2.human_validated }}>
+                                <i class="fas fa-play"></i> Extract Data
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if step_results.step3 %}
+                            <!-- Two-column layout: PDF Preview + Extracted Data -->
+                            <div class="row">
+                                <!-- PDF Preview Column -->
+                                <div class="col-xl-6 col-lg-12 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="fas fa-file-pdf"></i> PDF Preview:</h6>
+                                        <button class="btn btn-sm btn-outline-secondary d-xl-none" onclick="togglePdfView()" id="toggle-pdf-btn">
+                                            <i class="fas fa-eye"></i> Toggle PDF
+                                        </button>
+                                    </div>
+                                    <div id="step3-pdf-container" class="border rounded position-relative" style="height: 600px; overflow: auto; background: #f8f9fa;">
+                                        <embed src="/uploads/{{ document.filename }}" type="application/pdf" width="100%" height="100%" style="min-height: 600px;">
+                                        <!-- PDF loads directly in browser - no loading spinner needed -->
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle"></i> Compare extracted data with the original document
+                                    </small>
+                                </div>
+
+                                <!-- Extracted Data Column -->
+                                <div class="col-xl-6 col-lg-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6><i class="fas fa-download"></i> Extracted Data:</h6>
+                                        <div class="btn-group" role="group" aria-label="View options">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="toggleDataView('formatted')" id="formatted-view-btn">
+                                                <i class="fas fa-table"></i> Formatted
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleDataView('json')" id="json-view-btn">
+                                                <i class="fas fa-code"></i> JSON
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Formatted Data View (Default) -->
+                                    <div id="formatted-data-view" style="max-height: 600px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background: white;">
+                                        <!-- Extraction Summary Stats -->
+                                        {% if step_results.step3.extraction_summary %}
+                                        <div class="alert alert-info py-2 mb-3" style="border-left: 4px solid #0dcaf0;">
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <strong class="d-block">{{ step_results.step3.extraction_summary.total_extracted_fields or 0 }}</strong>
+                                                    <small>Form Fields</small>
+                                                </div>
+                                                <div class="col-4">
+                                                    <strong class="d-block">{{ step_results.step3.extraction_summary.total_extracted_tables or 0 }}</strong>
+                                                    <small>Tables</small>
+                                                </div>
+                                                <div class="col-4">
+                                                    <strong class="d-block">{{ step_results.step3.extraction_summary.total_table_rows_extracted or 0 }}</strong>
+                                                    <small>Table Rows</small>
+                                                </div>
+                                            </div>
+                                            {% if step_results.step3.extraction_summary.extraction_method %}
+                                            <div class="text-center mt-1">
+                                                <small class="text-muted">
+                                                    Method: <strong>{{ step_results.step3.extraction_summary.extraction_method.replace('_', ' ').title() }}</strong>
+                                                </small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+
+                                        {% if step_results.step3.extracted_data %}
+                                            <div class="mb-4">
+                                                <h6 class="text-primary"><i class="fas fa-user"></i> Form Fields ({{ step_results.step3.extracted_data | length }})</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th style="width: 40%">Field Name</th>
+                                                                <th>Extracted Value</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for field, value in step_results.step3.extracted_data.items() %}
+                                                            <tr>
+                                                                <td><strong>{{ field }}</strong></td>
+                                                                <td>
+                                                                    {% if value %}
+                                                                        <span class="text-success">{{ value }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-muted">null</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if step_results.step3.table_data %}
+                                            <div class="mb-3">
+                                                <h6 class="text-primary"><i class="fas fa-table"></i> Table Data</h6>
+                                                {% for table in step_results.step3.table_data %}
+                                                    <div class="card mb-3" style="border-left: 4px solid #007bff;">
+                                                        <div class="card-header py-2">
+                                                            <h6 class="mb-0">{{ table.table_name }}</h6>
+                                                            <small class="text-muted">{{ table.rows | length }} rows</small>
+                                                        </div>
+                                                        <div class="card-body p-2">
+                                                            {% if table.rows %}
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-sm table-hover">
+                                                                        <thead class="table-secondary">
+                                                                            <tr>
+                                                                                {% for header in table.headers %}
+                                                                                    <th style="font-size: 0.85em;">{{ header }}</th>
+                                                                                {% endfor %}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {% for row in table.rows %}
+                                                                                <tr>
+                                                                                    {% for header in table.headers %}
+                                                                                        <td style="font-size: 0.85em;">
+                                                                                            {% if row[header] %}
+                                                                                                <span class="text-success">{{ row[header] }}</span>
+                                                                                            {% else %}
+                                                                                                <span class="text-muted">null</span>
+                                                                                            {% endif %}
+                                                                                        </td>
+                                                                                    {% endfor %}
+                                                                                </tr>
+                                                                            {% endfor %}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            {% else %}
+                                                                <p class="text-muted mb-0">No data extracted</p>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- JSON Data View (Hidden by default) -->
+                                    <div id="json-data-view" style="display: none; max-height: 600px; overflow-y: auto;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-edit"></i> Edit JSON data directly - changes sync with formatted view
+                                            </small>
+                                            <div>
+                                                <button class="btn btn-sm btn-success" onclick="applyJsonChanges()" id="apply-json-btn">
+                                                    <i class="fas fa-check"></i> Apply Changes
+                                                </button>
+                                                <button class="btn btn-sm btn-secondary ms-1" onclick="resetJsonChanges()" id="reset-json-btn">
+                                                    <i class="fas fa-undo"></i> Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="result-json position-relative">
+                                            <textarea id="step3-json-editor" class="form-control"
+                                                      style="font-family: 'Courier New', monospace; font-size: 0.85em; min-height: 500px; resize: vertical;"
+                                                      spellcheck="false"
+                                                      oninput="markJsonEdited()"
+                                                      onpaste="setTimeout(markJsonEdited, 100)">{{ step_results.step3 | tojson(indent=2) }}</textarea>
+                                            <div id="json-edited-indicator" class="position-absolute top-0 end-0 m-2" style="display: none;">
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-edit"></i> Modified
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                                
+                                {% if not step_results.step3.human_validated %}
+                                <div class="validation-panel mt-3">
+                                    <h6>Review extracted data:</h6>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>You can iterate to improve data extraction:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>📝 Provide feedback to improve data extraction accuracy</li>
+                                            <li>🔄 Re-run extraction with your corrections</li>
+                                            <li>✅ Iterate until results are accurate</li>
+                                            <li>✅ Validate when satisfied with results</li>
+                                        </ul>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="data-feedback" class="form-label">
+                                            Feedback for data extraction improvement:
+                                            <small class="text-muted">(Natural language instructions)</small>
+                                        </label>
+                                        <textarea class="form-control" id="data-feedback" rows="4" 
+                                                placeholder="Examples:&#10;- 'Employee Name' should be 'John Smith' not 'Caroline Jones'&#10;- 'Birth Date' field is empty but shows '12/26/2001' in the document&#10;- Table 'Rate/Salary' has wrong values in 'Rate' column&#10;- 'Address' should include the ZIP code 55428&#10;- Missing data in 'Work Phone' field - shows blank but document has value"></textarea>
+                                    </div>
+                                    
+                                    <!-- Iteration tracking -->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <small class="text-muted">
+                                            Data extraction iteration: {{ step_results.step3.extraction_summary.refinement_iteration if step_results.step3.extraction_summary and step_results.step3.extraction_summary.refinement_iteration else 1 }}
+                                        </small>
+                                        <div>
+                                            <button class="btn btn-secondary me-2" onclick="reRunStep3()" id="rerun-step3-btn">
+                                                <i class="fas fa-redo"></i> Re-run
+                                            </button>
+                                            <button class="btn btn-warning me-2" onclick="refineStep3()" id="refine-step3-btn">
+                                                <i class="fas fa-sync"></i> Refine with Feedback
+                                            </button>
+                                            <button class="btn btn-success" onclick="validateStep3()">
+                                                <i class="fas fa-check"></i> Validate & Complete
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Feedback history for step 3 -->
+                                    <div id="step3-feedback-history" style="display:none;">
+                                        <div id="step3-feedback-response"></div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                    <div class="alert alert-success mt-2">
+                                        <i class="fas fa-check-circle"></i> Human validated
+                                        <div class="mt-2">
+                                            <a href="{{ url_for('download_result', doc_id=document.id) }}" 
+                                               class="btn btn-primary">
+                                                <i class="fas fa-download"></i> Download JSON
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Complete Step 2 validation to proceed.</p>
+                        {% endif %}
+                        <div id="step3-progress" style="display:none;">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status"></div>
+                                <p class="mt-2">Extracting data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preprocessing Preview Modal -->
+<div class="modal fade" id="preprocessingModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Document Processing Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Original vs Processed -->
+                    <div class="col-12 mb-3">
+                        <ul class="nav nav-tabs" id="previewTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="processed-tab" data-bs-toggle="tab" data-bs-target="#processed" type="button">
+                                    <i class="fas fa-magic"></i> Processed (Field-Ready)
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="original-tab" data-bs-toggle="tab" data-bs-target="#original" type="button">
+                                    <i class="fas fa-file-text"></i> Original PDF Text
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button">
+                                    <i class="fas fa-chart-bar"></i> Spatial Analysis
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3" id="previewTabContent">
+                            <!-- Processed Text Tab -->
+                            <div class="tab-pane fade show active" id="processed" role="tabpanel">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Spatially-formatted text ready for field extraction</strong>
+                                    <br><small>This shows how the document will be formatted when field extraction is run. No LLM processing required for this preview.</small>
+                                </div>
+                                <div style="border: 1px solid #ddd; height: 400px; overflow: auto; background-color: #f8f9fa; font-family: 'Courier New', monospace;">
+                                    <pre id="processed-text-content" style="margin: 0; padding: 15px; white-space: pre-wrap;"></pre>
+                                </div>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="copyProcessedText()">
+                                        <i class="fas fa-copy"></i> Copy Field-Ready Text
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Original Text Tab -->
+                            <div class="tab-pane fade" id="original" role="tabpanel">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-file-alt"></i> 
+                                    <strong>Raw PDF text extraction (before spatial processing)</strong>
+                                    <br><small>This is the unprocessed text as extracted directly from the PDF without coordinate-based formatting.</small>
+                                </div>
+                                <div style="border: 1px solid #ddd; height: 400px; overflow: auto; background-color: #f8f9fa; font-family: 'Courier New', monospace;">
+                                    <pre id="original-text-content" style="margin: 0; padding: 15px; white-space: pre-wrap;"></pre>
+                                </div>
+                            </div>
+                            
+                            <!-- Analysis Tab -->
+                            <div class="tab-pane fade" id="analysis" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Processing Statistics</h6>
+                                        <div id="processing-stats"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Spacing Analysis</h6>
+                                        <div id="spacing-stats"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h6>Line-by-Line Analysis</h6>
+                                    <div id="line-analysis" style="max-height: 300px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Field Boundary Editor Modal - PDF Overlay Version -->
+<div class="modal fade" id="fieldBoundaryModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Field Boundary Correction
+                </h5>
+                <div class="d-flex align-items-center">
+                    <span class="me-3 small">
+                        <span class="badge bg-primary me-2">Blue</span>Field Names
+                        <span class="badge bg-success me-2 ms-2">Green</span>Field Values
+                        <span class="badge bg-warning me-2 ms-2">Yellow</span>Issues
+                    </span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row h-100 g-0">
+                    <!-- PDF Viewer with Overlay -->
+                    <div class="col-md-8">
+                        <div id="pdf-overlay-container" style="position: relative; height: 80vh; overflow: auto; border-right: 1px solid #ddd;">
+                            <!-- PDF Embed -->
+                            <embed id="pdf-overlay-viewer" type="application/pdf" width="100%" height="100%" style="position: relative;">
+                            
+                            <!-- Field Highlight Overlay -->
+                            <div id="field-highlight-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;">
+                                <!-- Highlighted regions will be inserted here -->
+                            </div>
+                            
+                            <!-- Interactive Click Layer -->
+                            <div id="field-click-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; cursor: pointer;">
+                                <!-- Invisible clickable regions will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Field Editor Panel -->
+                    <div class="col-md-4">
+                        <div class="p-3 h-100 d-flex flex-column">
+                            <!-- Selected Field Info -->
+                            <div id="selected-field-info">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-mouse-pointer"></i> 
+                                    <strong>Click on highlighted regions</strong> to correct field assignments
+                                </div>
+                            </div>
+                            
+                            <!-- Field Editor -->
+                            <div id="field-editor-panel" style="display: none;">
+                                <h6>Edit Field Assignment</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Text:</label>
+                                    <input type="text" class="form-control form-control-sm" id="field-text" readonly>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Current Assignment:</label>
+                                    <input type="text" class="form-control form-control-sm" id="current-assignment" readonly>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Correct Assignment:</label>
+                                    <select class="form-select form-select-sm" id="field-correction-type">
+                                        <option value="keep">Keep Current Assignment</option>
+                                        <option value="change_field">Change Field Name</option>
+                                        <option value="change_value">Change Field Value</option>
+                                        <option value="mark_empty">Mark as Empty Field</option>
+                                        <option value="ignore">Ignore This Text</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3" id="new-assignment-section" style="display: none;">
+                                    <label class="form-label">New Assignment:</label>
+                                    <input type="text" class="form-control form-control-sm" id="new-assignment" placeholder="Enter correct field name or value">
+                                </div>
+                                
+                                <button class="btn btn-primary btn-sm" onclick="applyFieldCorrection()">
+                                    <i class="fas fa-check"></i> Apply
+                                </button>
+                            </div>
+                            
+                            <!-- Field Summary -->
+                            <div class="mt-auto">
+                                <h6>Extracted Fields</h6>
+                                <div id="fields-summary" class="border rounded p-2" style="height: 300px; overflow-y: auto; background-color: #f8f9fa; font-size: 0.85em;">
+                                    <!-- Field summary will be populated here -->
+                                </div>
+                                
+                                <div class="mt-3 text-center">
+                                    <button class="btn btn-success" onclick="applyAllCorrections()">
+                                        <i class="fas fa-save"></i> Save All Corrections
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    #json-container {
+        border-radius: 4px;
+    }
+    
+    #json-content {
+        color: #333;
+        background-color: transparent;
+        border: none;
+        outline: none;
+        resize: none;
+        line-height: 1.4;
+    }
+    
+    /* JSON syntax highlighting */
+    #json-content .json-key {
+        color: #0066cc;
+        font-weight: bold;
+    }
+    
+    #json-content .json-string {
+        color: #009900;
+    }
+    
+    #json-content .json-number {
+        color: #ff6600;
+    }
+    
+    #json-content .json-boolean {
+        color: #cc0066;
+    }
+    
+    #json-content .json-null {
+        color: #999999;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const docId = '{{ document.id }}';
+
+function goToStep(stepNumber) {
+    // Check if step is accessible
+    {% if not (step_results.step1 and step_results.step1.human_validated) %}
+        if (stepNumber > 1) {
+            alert('Please complete and validate Step 1 first');
+            return;
+        }
+    {% endif %}
+    {% if not (step_results.step2 and step_results.step2.human_validated) %}
+        if (stepNumber > 2) {
+            alert('Please complete and validate Step 2 first');
+            return;
+        }
+    {% endif %}
+    
+    // Navigate to the step
+    window.location.href = `/process/{{ document.id }}?step=${stepNumber}`;
+}
+
+function runStep1() {
+    $('#step1-btn').hide();
+    $('#step1-progress').show();
+    
+    $.post(`/api/step1/${docId}`)
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .fail(function() {
+            alert('Request failed');
+        })
+        .always(function() {
+            $('#step1-progress').hide();
+            $('#step1-btn').show();
+        });
+}
+
+function validateStep1() {
+    const correction = {
+        classification: $('#classification-correction').val()
+    };
+    
+    $.ajax({
+        url: `/api/step1/${docId}/validate`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(correction),
+        success: function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        },
+        error: function() {
+            alert('Request failed');
+        }
+    });
+}
+
+function runStep2() {
+    $('#step2-btn').hide();
+    $('#step2-progress').show();
+    
+    // Get selected preprocessing mode
+    const preprocessingMode = $('input[name="preprocessing-mode"]:checked').val();
+    
+    $.post(`/api/step2/${docId}`, {
+        preprocessing_mode: preprocessingMode
+    })
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .fail(function() {
+            alert('Request failed');
+        })
+        .always(function() {
+            $('#step2-progress').hide();
+            $('#step2-btn').show();
+        });
+}
+
+function reRunStep2() {
+    $('#rerun-step2-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Re-running...');
+    
+    // Get selected preprocessing mode
+    const preprocessingMode = $('input[name="preprocessing-mode"]:checked').val();
+    
+    $.ajax({
+        url: `/api/step2/${docId}`,
+        type: 'POST',
+        data: {
+            preprocessing_mode: preprocessingMode
+        },
+        success: function(data) {
+            if (data.success) {
+                showAlert('success', 'Field identification re-run completed successfully');
+                
+                // Reload to show updated results
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Request failed';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMsg = xhr.responseJSON.error;
+            }
+            showAlert('danger', errorMsg);
+        },
+        complete: function() {
+            $('#rerun-step2-btn').prop('disabled', false).html('<i class="fas fa-redo"></i> Re-run');
+        }
+    });
+}
+
+function refineStep2() {
+    const feedback = $('#fields-correction').val().trim();
+    
+    if (!feedback) {
+        alert('Please provide feedback for extraction refinement');
+        return;
+    }
+    
+    $('#refine-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Refining...');
+    
+    $.ajax({
+        url: `/api/step2/${docId}/refine`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            user_feedback: feedback,
+            preprocessing_mode: $('input[name="preprocessing-mode"]:checked').val() || 'original'
+        }),
+        success: function(data) {
+            if (data.success) {
+                // Show feedback response if available
+                if (data.feedback_applied) {
+                    $('#feedback-response').html(`
+                        <strong>Iteration ${data.iteration || 'N/A'}:</strong> ${data.feedback_applied}
+                    `);
+                    $('#feedback-history').show();
+                }
+                
+                // Clear the feedback textarea for next iteration
+                $('#fields-correction').val('');
+                
+                // Show success message with iteration info
+                let successMsg = data.message || 'Extraction refined successfully';
+                if (data.iteration) {
+                    successMsg += ` (Now at iteration ${data.iteration})`;
+                }
+                showAlert('success', successMsg);
+                
+                // Load feedback history
+                loadFeedbackHistory();
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Request failed';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMsg = xhr.responseJSON.error;
+            }
+            showAlert('danger', errorMsg);
+        },
+        complete: function() {
+            $('#refine-btn').prop('disabled', false).html('<i class="fas fa-sync"></i> Refine Extraction');
+        }
+    });
+}
+
+function validateStep2() {
+    const correction = {
+        notes: $('#fields-correction').val()
+    };
+    
+    $.ajax({
+        url: `/api/step2/${docId}/validate`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(correction),
+        success: function(data) {
+            if (data.success) {
+                showAlert('success', 'Step 2 validated successfully!');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        },
+        error: function() {
+            showAlert('danger', 'Request failed');
+        }
+    });
+}
+
+function loadFeedbackHistory() {
+    $.get(`/api/step2/${docId}/feedback-history`)
+        .done(function(data) {
+            if (data.success && data.feedback_history.length > 0) {
+                let historyHtml = '<div class="mt-3"><h6>Feedback History:</h6>';
+                
+                data.feedback_history.forEach((entry, index) => {
+                    const timestamp = new Date(entry.timestamp).toLocaleString();
+                    historyHtml += `
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <small class="text-muted">Iteration ${entry.iteration} - ${timestamp}</small>
+                                <p class="mb-0 mt-1">"${entry.user_feedback}"</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                historyHtml += '</div>';
+                $('#feedback-history').html(historyHtml).show();
+            }
+        })
+        .fail(function() {
+            console.log('Failed to load feedback history');
+        });
+}
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    $('.alert').not('.alert-info').remove();
+    
+    // Add new alert at the top of the validation panel
+    $('.validation-panel').prepend(alertHtml);
+    
+    // Auto-dismiss after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            $('.alert-success').fadeOut();
+        }, 5000);
+    }
+}
+
+// JSON display utilities
+function copyJsonToClipboard() {
+    const jsonContent = document.getElementById('json-content');
+    if (jsonContent) {
+        const textArea = document.createElement('textarea');
+        textArea.value = jsonContent.textContent;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        // Show feedback
+        showAlert('success', 'JSON copied to clipboard!');
+    }
+}
+
+function toggleJsonFormat() {
+    const jsonContent = document.getElementById('json-content');
+    const container = document.getElementById('json-container');
+    
+    if (container.style.height === '600px') {
+        // Expand to full screen
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+        container.style.zIndex = '9999';
+        container.style.backgroundColor = '#ffffff';
+        jsonContent.style.fontSize = '14px';
+        
+        // Add close button
+        if (!document.getElementById('close-fullscreen')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'close-fullscreen';
+            closeBtn.className = 'btn btn-danger';
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '10px';
+            closeBtn.style.right = '10px';
+            closeBtn.style.zIndex = '10000';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i> Close';
+            closeBtn.onclick = toggleJsonFormat;
+            container.appendChild(closeBtn);
+        }
+    } else {
+        // Return to normal
+        container.style.position = 'relative';
+        container.style.top = 'auto';
+        container.style.left = 'auto';
+        container.style.width = 'auto';
+        container.style.height = '600px';
+        container.style.zIndex = 'auto';
+        container.style.backgroundColor = '#f8f9fa';
+        jsonContent.style.fontSize = '12px';
+        
+        // Remove close button
+        const closeBtn = document.getElementById('close-fullscreen');
+        if (closeBtn) {
+            closeBtn.remove();
+        }
+    }
+}
+
+function revalidateStep2() {
+    if (confirm('This will reset the validation status and allow you to make changes. Continue?')) {
+        // Clear the validated JSON by making an API call to reset validation
+        $.ajax({
+            url: `/api/step2/${docId}/reset-validation`,
+            type: 'POST',
+            contentType: 'application/json',
+            success: function(data) {
+                if (data.success) {
+                    showAlert('info', 'Validation reset. You can now refine the extraction again.');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', 'Error resetting validation: ' + data.error);
+                }
+            },
+            error: function() {
+                showAlert('danger', 'Failed to reset validation');
+            }
+        });
+    }
+}
+
+function showPreprocessingPreview() {
+    const preprocessingModal = new bootstrap.Modal(document.getElementById('preprocessingModal'));
+    
+    // Get selected mode if available
+    const selectedMode = $('input[name="preprocessing-mode"]:checked').val();
+    
+    // Show loading state
+    document.getElementById('processed-text-content').textContent = 'Loading...';
+    document.getElementById('original-text-content').textContent = 'Loading...';
+    
+    // Update modal title to show which mode will be used
+    const modalTitle = document.querySelector('#preprocessingModal .modal-title');
+    if (modalTitle) {
+        const modeText = selectedMode === 'spatial' ? ' (Spatial Mode Selected)' : ' (Original Mode Selected)';
+        modalTitle.textContent = 'Preprocessing Preview' + (selectedMode ? modeText : '');
+    }
+    
+    // Fetch preprocessing preview
+    $.get(`/api/step2/${docId}/preprocessing-preview`)
+        .done(function(data) {
+            if (data.success) {
+                // Populate processed text
+                document.getElementById('processed-text-content').textContent = data.processed_text;
+                document.getElementById('original-text-content').textContent = data.original_text;
+                
+                // Highlight the active tab based on selected mode
+                if (selectedMode === 'spatial') {
+                    // Make spatial tab active
+                    $('#processed-text-tab').tab('show');
+                } else {
+                    // Make original tab active
+                    $('#original-text-tab').tab('show');
+                }
+                
+                // Populate statistics
+                populateProcessingStats(data);
+                populateSpacingStats(data.spacing_statistics);
+                populateLineAnalysis(data.line_analysis);
+                
+                preprocessingModal.show();
+            } else {
+                showAlert('danger', 'Error loading preprocessing preview: ' + data.error);
+            }
+        })
+        .fail(function() {
+            showAlert('danger', 'Failed to load preprocessing preview');
+        });
+}
+
+function populateProcessingStats(data) {
+    const stats = document.getElementById('processing-stats');
+    stats.innerHTML = `
+        <div class="card">
+            <div class="card-body p-2">
+                <p class="mb-1"><strong>Word Count:</strong> ${data.word_count}</p>
+                <p class="mb-1"><strong>Has Coordinates:</strong> ${data.has_coordinates ? '✅ Yes' : '❌ No'}</p>
+                <p class="mb-1"><strong>Preprocessing Applied:</strong> ${data.preprocessing_applied ? '✅ Yes' : '❌ No'}</p>
+                <p class="mb-1"><strong>Lines Detected:</strong> ${data.line_analysis ? data.line_analysis.length : 0}</p>
+                <p class="mb-0"><strong>Table Regions:</strong> ${data.table_regions ? data.table_regions.length : 0}</p>
+            </div>
+        </div>
+    `;
+}
+
+function populateSpacingStats(stats) {
+    const spacingDiv = document.getElementById('spacing-stats');
+    if (stats && Object.keys(stats).length > 0) {
+        spacingDiv.innerHTML = `
+            <div class="card">
+                <div class="card-body p-2">
+                    <p class="mb-1"><strong>Avg Spacing:</strong> ${stats.avg_spacing?.toFixed(2) || 'N/A'}px</p>
+                    <p class="mb-1"><strong>Median Spacing:</strong> ${stats.median_spacing?.toFixed(2) || 'N/A'}px</p>
+                    <p class="mb-0"><strong>Spacing Std Dev:</strong> ${stats.spacing_std?.toFixed(2) || 'N/A'}px</p>
+                </div>
+            </div>
+        `;
+    } else {
+        spacingDiv.innerHTML = '<p class="text-muted">No spacing statistics available</p>';
+    }
+}
+
+function populateLineAnalysis(lineAnalysis) {
+    const analysisDiv = document.getElementById('line-analysis');
+    
+    if (!lineAnalysis || lineAnalysis.length === 0) {
+        analysisDiv.innerHTML = '<p class="text-muted">No line analysis available</p>';
+        return;
+    }
+    
+    let html = '';
+    lineAnalysis.forEach(line => {
+        html += `
+            <div class="card mb-2">
+                <div class="card-header py-1">
+                    <small><strong>Line ${line.line_id}</strong> (${line.word_count} words, ${line.cluster_count} clusters)</small>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Original:</strong><br>
+                            <code style="font-size: 12px;">${line.original_text}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Processed:</strong><br>
+                            <code style="font-size: 12px;">${line.processed_text}</code>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <strong>Clusters:</strong>
+                        <div class="ms-2">
+                            ${line.clusters.map(cluster => `
+                                <span class="badge ${cluster.is_field_pattern ? 'bg-primary' : 'bg-secondary'} me-1">
+                                    ${cluster.text} ${cluster.is_field_pattern ? '(field)' : '(value)'}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    analysisDiv.innerHTML = html;
+}
+
+function copyProcessedText() {
+    const textContent = document.getElementById('processed-text-content').textContent;
+    const textArea = document.createElement('textarea');
+    textArea.value = textContent;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    showAlert('success', 'Processed text copied to clipboard!');
+}
+
+// Load feedback history on page load for Step 2
+$(document).ready(function() {
+    if ($('#step2-card').is(':visible')) {
+        loadFeedbackHistory();
+    }
+});
+
+function runStep3() {
+    $('#step3-btn').hide();
+    $('#step3-progress').show();
+    
+    $.post(`/api/step3/${docId}`)
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .fail(function() {
+            alert('Request failed');
+        })
+        .always(function() {
+            $('#step3-progress').hide();
+            $('#step3-btn').show();
+        });
+}
+
+function reRunStep3() {
+    $('#rerun-step3-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Re-running...');
+    
+    $.ajax({
+        url: `/api/step3/${docId}`,
+        type: 'POST',
+        success: function(data) {
+            if (data.success) {
+                showAlert('success', 'Data extraction re-run completed successfully');
+                
+                // Reload to show updated results
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Request failed';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMsg = xhr.responseJSON.error;
+            }
+            showAlert('danger', errorMsg);
+        },
+        complete: function() {
+            $('#rerun-step3-btn').prop('disabled', false).html('<i class="fas fa-redo"></i> Re-run');
+        }
+    });
+}
+
+function refineStep3() {
+    const feedback = $('#data-feedback').val().trim();
+    
+    if (!feedback) {
+        alert('Please provide feedback for data extraction refinement');
+        return;
+    }
+    
+    $('#refine-step3-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Refining...');
+    
+    $.ajax({
+        url: `/api/step3/${docId}`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            user_feedback: feedback
+        }),
+        success: function(data) {
+            if (data.success) {
+                // Show feedback response if available
+                if (data.feedback_applied) {
+                    $('#step3-feedback-response').html(`
+                        <strong>Iteration ${data.iteration || 'N/A'}:</strong> ${data.feedback_applied}
+                    `);
+                    $('#step3-feedback-history').show();
+                }
+                
+                // Clear the feedback textarea for next iteration
+                $('#data-feedback').val('');
+                
+                // Show success message with iteration info
+                let successMsg = data.message || 'Data extraction refined successfully';
+                if (data.iteration) {
+                    successMsg += ` (Now at iteration ${data.iteration})`;
+                }
+                showAlert('success', successMsg);
+                
+                // Reload to show updated results
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Request failed';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMsg = xhr.responseJSON.error;
+            }
+            showAlert('danger', errorMsg);
+        },
+        complete: function() {
+            $('#refine-step3-btn').prop('disabled', false).html('<i class="fas fa-sync"></i> Refine Data');
+        }
+    });
+}
+
+function validateStep3() {
+    const correction = {
+        notes: $('#data-feedback').val()
+    };
+    
+    $.ajax({
+        url: `/api/step3/${docId}/validate`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(correction),
+        success: function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        },
+        error: function() {
+            alert('Request failed');
+        }
+    });
+}
+
+// Field Boundary Editor Functions - PDF Overlay Version
+let extractedFields = [];
+let selectedFieldData = null;
+let fieldCorrections = {};
+
+function showFieldBoundaryEditor() {
+    // Check if Step 2 is completed
+    if (!$('#step2-card').length || $('#step2-card').find('.badge.bg-success').length === 0) {
+        showAlert('warning', 'Please complete field extraction first!');
+        return;
+    }
+    
+    const fieldBoundaryModal = new bootstrap.Modal(document.getElementById('fieldBoundaryModal'));
+    
+    // Set PDF source
+    const pdfViewer = document.getElementById('pdf-overlay-viewer');
+    const pdfSrc = `/uploads/{{ document.filename }}`;
+    console.log('Setting PDF source to:', pdfSrc);
+    pdfViewer.src = pdfSrc;
+    
+    // Show loading state
+    document.getElementById('selected-field-info').innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Loading field data...</div>';
+    
+    // Get the extracted fields from Step 2 results
+    loadExtractedFields();
+    
+    // Load word coordinates for positioning
+    $.get(`/api/step2/${docId}/field-boundaries`)
+        .done(function(data) {
+            if (data.success) {
+                // Create field overlays on the PDF with page dimensions
+                createFieldOverlays(data.field_regions, data.page_dimensions);
+                
+                fieldBoundaryModal.show();
+            } else {
+                showAlert('danger', 'Error loading field positioning: ' + data.error);
+            }
+        })
+        .fail(function() {
+            showAlert('danger', 'Failed to load field positioning data');
+        });
+}
+
+function loadExtractedFields() {
+    // Get the current Step 2 extraction results from the backend directly
+    console.log('Loading extracted fields...');
+    
+    // Make an API call to get the current Step 2 results
+    $.get(`/api/step2/${docId}/results`)
+        .done(function(data) {
+            if (data.success && data.step2_result) {
+                const step2Results = data.step2_result;
+                console.log('Step 2 results from API:', step2Results);
+                
+                extractedFields = [];
+                
+                // Parse form fields (it's an object, not array)
+                if (step2Results.form_fields) {
+                    const fieldEntries = Object.entries(step2Results.form_fields);
+                    console.log('API VERSION: Found', fieldEntries.length, 'form fields');
+                    fieldEntries.forEach(function([label, value], index) {
+                        // Skip fields with undefined or null labels
+                        if (!label || label === 'undefined' || label === 'null') {
+                            console.log('Skipping field with invalid label:', label, '=', value);
+                            return;
+                        }
+                        
+                        console.log('Adding field:', label, '=', value);
+                        extractedFields.push({
+                            id: 'field_' + index,
+                            type: 'field',
+                            label: label,
+                            value: value,
+                            original: {label: label, value: value}
+                        });
+                    });
+                } else {
+                    console.log('No form_fields found in results');
+                }
+                
+                // Parse table headers
+                if (step2Results.tables) {
+                    console.log('Found', step2Results.tables.length, 'tables');
+                    step2Results.tables.forEach(function(table, tableIndex) {
+                        if (table.headers) {
+                            table.headers.forEach(function(header, headerIndex) {
+                                console.log('Adding table header:', header.name);
+                                extractedFields.push({
+                                    id: 'table_' + tableIndex + '_header_' + headerIndex,
+                                    type: 'table_header',
+                                    label: header.name,
+                                    value: null,
+                                    original: header,
+                                    table_id: tableIndex
+                                });
+                            });
+                        }
+                    });
+                } else {
+                    console.log('No tables found in results');
+                }
+                
+                console.log('Total extracted fields:', extractedFields.length);
+                updateFieldsSummary();
+                
+            } else {
+                console.error('No Step 2 results found');
+                showAlert('danger', 'No field extraction results found');
+            }
+        })
+        .fail(function() {
+            // Fallback to DOM parsing
+            console.log('API call failed, trying DOM parsing...');
+            loadExtractedFieldsFromDOM();
+        });
+}
+
+function loadExtractedFieldsFromDOM() {
+    // Fallback method: parse from DOM
+    try {
+        const jsonElement = document.getElementById('json-content');
+        if (!jsonElement) {
+            console.error('json-content element not found');
+            showAlert('danger', 'Could not find extraction results');
+            return;
+        }
+        
+        let jsonContent = jsonElement.textContent.trim();
+        console.log('JSON content preview:', jsonContent.substring(0, 300));
+        
+        // Clean up the JSON content (remove extra quotes if present)
+        if (jsonContent.startsWith('"') && jsonContent.endsWith('"')) {
+            jsonContent = jsonContent.slice(1, -1).replace(/\\"/g, '"');
+        }
+        
+        const step2Results = JSON.parse(jsonContent);
+        console.log('Parsed Step 2 results from DOM:', step2Results);
+        
+        extractedFields = [];
+        
+        // Parse form fields (it's an object, not array)
+        if (step2Results.form_fields) {
+            const fieldEntries = Object.entries(step2Results.form_fields);
+            console.log('DOM VERSION: Found', fieldEntries.length, 'form fields from DOM');
+            fieldEntries.forEach(function([label, value], index) {
+                // Skip fields with undefined or null labels
+                if (!label || label === 'undefined' || label === 'null') {
+                    console.log('DOM: Skipping field with invalid label:', label, '=', value);
+                    return;
+                }
+                
+                extractedFields.push({
+                    id: 'field_' + index,
+                    type: 'field',
+                    label: label,
+                    value: value,
+                    original: {label: label, value: value}
+                });
+            });
+        }
+        
+        console.log('Total extracted fields from DOM:', extractedFields.length);
+        updateFieldsSummary();
+        
+    } catch (e) {
+        console.error('Error parsing Step 2 results from DOM:', e);
+        showAlert('danger', 'Error loading extracted fields: ' + e.message);
+    }
+}
+
+function createFieldOverlays(wordRegions, pageDimensions) {
+    console.log('Creating field overlays...');
+    console.log('Word regions count:', wordRegions.length);
+    console.log('Extracted fields count:', extractedFields.length);
+    console.log('Page dimensions:', pageDimensions);
+    
+    const highlightOverlay = document.getElementById('field-highlight-overlay');
+    const clickLayer = document.getElementById('field-click-layer');
+    
+    if (!highlightOverlay || !clickLayer) {
+        console.error('Overlay elements not found');
+        return;
+    }
+    
+    // Clear existing overlays
+    highlightOverlay.innerHTML = '';
+    clickLayer.innerHTML = '';
+    
+    // Add a test highlight to verify the overlay system is working
+    const testHighlight = document.createElement('div');
+    testHighlight.style.position = 'absolute';
+    testHighlight.style.left = '50px';
+    testHighlight.style.top = '50px';
+    testHighlight.style.width = '100px';
+    testHighlight.style.height = '20px';
+    testHighlight.style.border = '3px solid red';
+    testHighlight.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+    testHighlight.style.zIndex = '100';
+    testHighlight.innerHTML = '<div style="color: white; font-size: 12px; font-weight: bold;">TEST</div>';
+    highlightOverlay.appendChild(testHighlight);
+    
+    let totalHighlights = 0;
+    
+    // Map extracted fields to word regions for highlighting
+    extractedFields.forEach(function(field, fieldIndex) {
+        console.log(`Processing field ${fieldIndex}: "${field.label}" = "${field.value}"`);
+        
+        // Find word regions that match this field
+        const matchingRegions = findMatchingWordRegions(field, wordRegions);
+        console.log(`Found ${matchingRegions.length} matching regions for field "${field.label}"`);
+        
+        matchingRegions.forEach(function(region, regionIndex) {
+            console.log(`Creating highlight for region ${regionIndex}: "${region.text}"`);
+            createFieldHighlight(field, region, highlightOverlay, clickLayer, pageDimensions);
+            totalHighlights++;
+        });
+    });
+    
+    console.log('Total highlights created:', totalHighlights);
+    
+    if (totalHighlights === 0) {
+        document.getElementById('selected-field-info').innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> No field matches found. Check console for debugging info.</div>';
+    } else {
+        document.getElementById('selected-field-info').innerHTML = '<div class="alert alert-info"><i class="fas fa-mouse-pointer"></i> <strong>Click on highlighted regions</strong> to correct field assignments</div>';
+    }
+}
+
+function findMatchingWordRegions(field, wordRegions) {
+    console.log(`Searching for matches for field: "${field.label}"`);
+    
+    // Check if field has valid label
+    if (!field.label || field.label === 'undefined' || field.label === 'null') {
+        console.log('Skipping field with invalid label:', field.label);
+        return [];
+    }
+    
+    // Create search terms from field label and value
+    const searchTexts = [];
+    
+    // Add field label (split into words for better matching)
+    const labelWords = field.label.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    searchTexts.push(...labelWords);
+    
+    // Add full field label
+    searchTexts.push(field.label.toLowerCase());
+    
+    // Add field value if it exists
+    if (field.value && field.value !== null && field.value !== '' && field.value !== 'undefined' && field.value !== 'null') {
+        try {
+            searchTexts.push(field.value.toLowerCase());
+        } catch (e) {
+            console.log('Error processing field value:', field.value, e);
+        }
+    }
+    
+    console.log(`Search terms for "${field.label}":`, searchTexts);
+    
+    const matchingRegions = [];
+    const usedRegionIds = new Set();
+    
+    searchTexts.forEach(function(searchText) {
+        const matches = wordRegions.filter(function(region) {
+            if (usedRegionIds.has(region.id)) return false; // Avoid duplicates
+            
+            const regionText = region.text.toLowerCase();
+            
+            // Exact match
+            if (regionText === searchText) {
+                console.log(`Exact match found: "${region.text}" for "${searchText}"`);
+                return true;
+            }
+            
+            // Contains match (either direction)
+            if (regionText.includes(searchText) && searchText.length > 2) {
+                console.log(`Contains match found: "${region.text}" contains "${searchText}"`);
+                return true;
+            }
+            
+            if (searchText.includes(regionText) && regionText.length > 2) {
+                console.log(`Reverse contains match found: "${searchText}" contains "${region.text}"`);
+                return true;
+            }
+            
+            return false;
+        });
+        
+        matches.forEach(function(match) {
+            if (!usedRegionIds.has(match.id)) {
+                matchingRegions.push(match);
+                usedRegionIds.add(match.id);
+            }
+        });
+    });
+    
+    console.log(`Total matches for "${field.label}":`, matchingRegions.length);
+    return matchingRegions;
+}
+
+function createFieldHighlight(field, wordRegion, highlightOverlay, clickLayer, pageDimensions) {
+    console.log('Creating highlight for word region:', wordRegion);
+    
+    // Use actual PDF page height for coordinate conversion
+    const pdfHeight = pageDimensions ? pageDimensions.height : 800; // fallback height
+    console.log('Using PDF height:', pdfHeight);
+    
+    // Calculate positioning (PDF coordinates to overlay coordinates)
+    const scale = 1; // Assuming 1:1 scale for now
+    
+    // Check if wordRegion has bounding_box structure or direct coordinates
+    let pdfX, pdfY, width, height;
+    if (wordRegion.bounding_box) {
+        pdfX = wordRegion.bounding_box.x0 * scale;
+        pdfY = wordRegion.bounding_box.y0 * scale;
+        width = wordRegion.bounding_box.width * scale;
+        height = wordRegion.bounding_box.height * scale;
+    } else {
+        // Direct coordinate structure
+        pdfX = wordRegion.x0 * scale;
+        pdfY = wordRegion.y0 * scale;
+        width = wordRegion.width * scale;
+        height = wordRegion.height * scale;
+    }
+    
+    // Convert PDF coordinates (origin at bottom-left) to HTML coordinates (origin at top-left)
+    const x = pdfX;
+    const y = pdfHeight - pdfY - height; // Flip Y coordinate
+    
+    console.log(`PDF coords: x=${pdfX}, y=${pdfY}, converted to HTML: x=${x}, y=${y}, width=${width}, height=${height}`);
+    
+    // Create highlight element
+    const highlight = document.createElement('div');
+    highlight.className = 'field-highlight';
+    highlight.style.position = 'absolute';
+    highlight.style.left = x + 'px';
+    highlight.style.top = y + 'px';
+    highlight.style.width = width + 'px';
+    highlight.style.height = height + 'px';
+    highlight.style.border = '2px solid';
+    highlight.style.borderRadius = '3px';
+    highlight.style.pointerEvents = 'none';
+    
+    // Color based on field type
+    if (field.type === 'field') {
+        if (field.value === null || field.value === '') {
+            highlight.style.borderColor = '#ffc107'; // Yellow for empty fields
+            highlight.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+        } else {
+            highlight.style.borderColor = '#28a745'; // Green for field values
+            highlight.style.backgroundColor = 'rgba(40, 167, 69, 0.1)';
+        }
+    } else {
+        highlight.style.borderColor = '#007bff'; // Blue for field names/headers
+        highlight.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+    }
+    
+    // Add field label
+    const label = document.createElement('div');
+    label.style.position = 'absolute';
+    label.style.left = '2px';
+    label.style.top = '2px';
+    label.style.fontSize = '10px';
+    label.style.fontWeight = 'bold';
+    label.style.color = '#fff';
+    label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    label.style.padding = '1px 3px';
+    label.style.borderRadius = '2px';
+    label.style.maxWidth = (width - 4) + 'px';
+    label.style.overflow = 'hidden';
+    label.style.whiteSpace = 'nowrap';
+    label.textContent = field.label || 'Unknown';
+    highlight.appendChild(label);
+    
+    highlightOverlay.appendChild(highlight);
+    
+    // Create clickable area
+    const clickArea = document.createElement('div');
+    clickArea.className = 'field-click-area';
+    clickArea.style.position = 'absolute';
+    clickArea.style.left = x + 'px';
+    clickArea.style.top = y + 'px';
+    clickArea.style.width = width + 'px';
+    clickArea.style.height = height + 'px';
+    clickArea.style.cursor = 'pointer';
+    clickArea.style.backgroundColor = 'transparent';
+    
+    clickArea.addEventListener('click', function() {
+        selectField(field, wordRegion);
+    });
+    
+    clickLayer.appendChild(clickArea);
+}
+
+function selectField(field, wordRegion) {
+    selectedFieldData = { field: field, region: wordRegion };
+    
+    // Show field editor
+    document.getElementById('selected-field-info').style.display = 'none';
+    document.getElementById('field-editor-panel').style.display = 'block';
+    
+    // Populate field details
+    document.getElementById('field-text').value = wordRegion.text;
+    document.getElementById('current-assignment').value = `${field.label}: ${field.value || '[EMPTY]'}`;
+    
+    // Reset correction type
+    document.getElementById('field-correction-type').value = 'keep';
+    document.getElementById('new-assignment-section').style.display = 'none';
+    
+    // Add change handler for correction type
+    document.getElementById('field-correction-type').onchange = function() {
+        const value = this.value;
+        const newAssignmentSection = document.getElementById('new-assignment-section');
+        
+        if (value === 'change_field' || value === 'change_value') {
+            newAssignmentSection.style.display = 'block';
+            const placeholder = value === 'change_field' ? 'Enter correct field name' : 'Enter correct value';
+            document.getElementById('new-assignment').placeholder = placeholder;
+        } else {
+            newAssignmentSection.style.display = 'none';
+        }
+    };
+}
+
+function applyFieldCorrection() {
+    if (!selectedFieldData) return;
+    
+    const correctionType = document.getElementById('field-correction-type').value;
+    const newAssignment = document.getElementById('new-assignment').value;
+    
+    const fieldId = selectedFieldData.field.id;
+    
+    // Store correction
+    fieldCorrections[fieldId] = {
+        type: correctionType,
+        newValue: newAssignment,
+        originalField: selectedFieldData.field,
+        region: selectedFieldData.region
+    };
+    
+    // Apply correction to display
+    applyFieldCorrectionToDisplay(fieldId, correctionType, newAssignment);
+    
+    // Hide editor
+    document.getElementById('field-editor-panel').style.display = 'none';
+    document.getElementById('selected-field-info').style.display = 'block';
+    
+    showAlert('success', 'Field correction applied');
+}
+
+function applyFieldCorrectionToDisplay(fieldId, correctionType, newValue) {
+    // Find and update the field in extractedFields
+    const fieldIndex = extractedFields.findIndex(f => f.id === fieldId);
+    if (fieldIndex !== -1) {
+        const field = extractedFields[fieldIndex];
+        
+        switch (correctionType) {
+            case 'change_field':
+                field.label = newValue;
+                break;
+            case 'change_value':
+                field.value = newValue;
+                break;
+            case 'mark_empty':
+                field.value = null;
+                break;
+            case 'ignore':
+                field.ignored = true;
+                break;
+        }
+    }
+    
+    updateFieldsSummary();
+}
+
+function updateFieldsSummary() {
+    const summary = document.getElementById('fields-summary');
+    let html = '';
+    
+    extractedFields.forEach(function(field) {
+        if (field.ignored) return;
+        
+        const correctionMarker = fieldCorrections[field.id] ? ' <span class="badge bg-warning">CORRECTED</span>' : '';
+        
+        if (field.type === 'field') {
+            html += `<div class="mb-1">
+                <strong>${field.label}:</strong> ${field.value || '<em>empty</em>'}${correctionMarker}
+            </div>`;
+        } else if (field.type === 'table_header') {
+            html += `<div class="mb-1">
+                <strong>Table Header:</strong> ${field.label}${correctionMarker}
+            </div>`;
+        }
+    });
+    
+    summary.innerHTML = html;
+}
+
+function applyAllCorrections() {
+    // Collect all corrections and send to backend
+    const corrections = Object.keys(fieldCorrections).map(function(fieldId) {
+        return {
+            fieldId: fieldId,
+            ...fieldCorrections[fieldId]
+        };
+    });
+    
+    // TODO: Send corrections to backend to update Step 2 results
+    console.log('All field corrections:', corrections);
+    
+    showAlert('success', 'All corrections saved! Step 2 results will be updated.');
+    
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('fieldBoundaryModal')).hide();
+    
+    // Refresh the page to show updated results
+    setTimeout(() => location.reload(), 1500);
+}
+
+// JSON Editor Functions
+let originalJsonData = null;
+
+function resetJsonEditor() {
+    if (originalJsonData) {
+        document.getElementById('json-editor').value = JSON.stringify(originalJsonData, null, 2);
+    } else {
+        // Get the original data from the displayed JSON
+        const jsonContent = document.getElementById('json-content');
+        if (jsonContent) {
+            try {
+                const textContent = jsonContent.textContent || jsonContent.innerText;
+                originalJsonData = JSON.parse(textContent);
+                document.getElementById('json-editor').value = JSON.stringify(originalJsonData, null, 2);
+            } catch (e) {
+                console.error('Error parsing original JSON:', e);
+                showAlert('danger', 'Error resetting JSON editor');
+            }
+        }
+    }
+}
+
+function validateJsonSyntax() {
+    const jsonEditor = document.getElementById('json-editor');
+    const jsonText = jsonEditor.value;
+    
+    try {
+        JSON.parse(jsonText);
+        showAlert('success', 'JSON syntax is valid!');
+        console.log('JSON validation successful');
+    } catch (e) {
+        console.error('JSON validation error:', e);
+        console.error('JSON text that failed:', jsonText);
+        showAlert('danger', `Invalid JSON syntax: ${e.message}`);
+        
+        // Try to highlight the error location if possible
+        if (e.message.includes('position')) {
+            const match = e.message.match(/position (\d+)/);
+            if (match) {
+                const pos = parseInt(match[1]);
+                jsonEditor.focus();
+                jsonEditor.setSelectionRange(pos, pos);
+            }
+        }
+    }
+}
+
+function formatJson() {
+    const jsonEditor = document.getElementById('json-editor');
+    const jsonText = jsonEditor.value;
+    
+    try {
+        const parsed = JSON.parse(jsonText);
+        const formatted = JSON.stringify(parsed, null, 2);
+        jsonEditor.value = formatted;
+        showAlert('success', 'JSON formatted successfully!');
+    } catch (e) {
+        console.error('JSON formatting error:', e);
+        showAlert('danger', `Cannot format - Invalid JSON: ${e.message}`);
+    }
+}
+
+function saveJsonEdits() {
+    const jsonEditor = document.getElementById('json-editor');
+    const jsonText = jsonEditor.value;
+    
+    console.log('Attempting to save JSON:', jsonText);
+    
+    try {
+        // Validate JSON syntax
+        const editedData = JSON.parse(jsonText);
+        console.log('JSON parsed successfully:', editedData);
+        
+        // Save the edited JSON to the server
+        $.ajax({
+            url: `/api/step2/${docId}/save-edited-fields`,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                edited_fields: editedData
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('success', 'Field edits saved successfully!');
+                    
+                    // Update the hidden reference element
+                    const jsonContent = document.getElementById('json-content');
+                    if (jsonContent) {
+                        jsonContent.textContent = JSON.stringify(editedData, null, 2);
+                    }
+                    
+                    // Update original data
+                    originalJsonData = editedData;
+                    
+                } else {
+                    showAlert('danger', 'Error saving edits: ' + response.error);
+                }
+            },
+            error: function() {
+                showAlert('danger', 'Failed to save field edits');
+            }
+        });
+        
+    } catch (e) {
+        console.error('JSON parsing error:', e);
+        console.error('JSON text that failed:', jsonText);
+        showAlert('danger', `Invalid JSON format: ${e.message}. Please check your syntax.`);
+    }
+}
+
+// Initialize original JSON data when page loads
+// Step 3 Data View Toggle Function
+function toggleDataView(viewType) {
+    const formattedView = document.getElementById('formatted-data-view');
+    const jsonView = document.getElementById('json-data-view');
+    const formattedBtn = document.getElementById('formatted-view-btn');
+    const jsonBtn = document.getElementById('json-view-btn');
+
+    if (viewType === 'formatted') {
+        formattedView.style.display = 'block';
+        jsonView.style.display = 'none';
+        formattedBtn.classList.add('active');
+        jsonBtn.classList.remove('active');
+    } else {
+        formattedView.style.display = 'none';
+        jsonView.style.display = 'block';
+        formattedBtn.classList.remove('active');
+        jsonBtn.classList.add('active');
+    }
+}
+
+// Toggle PDF view on smaller screens
+function togglePdfView() {
+    const pdfContainer = document.getElementById('step3-pdf-container');
+    const toggleBtn = document.getElementById('toggle-pdf-btn');
+
+    if (pdfContainer.style.display === 'none') {
+        pdfContainer.style.display = 'block';
+        toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide PDF';
+    } else {
+        pdfContainer.style.display = 'none';
+        toggleBtn.innerHTML = '<i class="fas fa-eye"></i> Show PDF';
+    }
+}
+
+// PDF loading handled automatically by browser
+
+// Step 3 JSON Editor and Sync Functions
+let currentStep3Data = null;
+let originalStep3Data = null;
+
+// Apply changes from JSON editor to formatted view
+function applyJsonChanges() {
+    const jsonEditor = document.getElementById('step3-json-editor');
+    const applyBtn = document.getElementById('apply-json-btn');
+
+    try {
+        // Parse the JSON
+        const updatedData = JSON.parse(jsonEditor.value);
+        currentStep3Data = updatedData;
+
+        // Update the formatted view
+        updateFormattedView(updatedData);
+
+        // Visual feedback
+        applyBtn.innerHTML = '<i class="fas fa-check"></i> Applied!';
+        applyBtn.className = 'btn btn-sm btn-success';
+
+        // Hide the modified indicator
+        const indicator = document.getElementById('json-edited-indicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
+
+        setTimeout(() => {
+            applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply Changes';
+            applyBtn.className = 'btn btn-sm btn-success';
+        }, 2000);
+
+        console.log('JSON changes applied successfully');
+
+    } catch (error) {
+        // Handle JSON syntax errors
+        applyBtn.innerHTML = '<i class="fas fa-times"></i> Invalid JSON';
+        applyBtn.className = 'btn btn-sm btn-danger';
+
+        setTimeout(() => {
+            applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply Changes';
+            applyBtn.className = 'btn btn-sm btn-success';
+        }, 2000);
+
+        alert('Invalid JSON format. Please check your syntax and try again.');
+        console.error('JSON parsing error:', error);
+    }
+}
+
+// Reset JSON editor to original data
+function resetJsonChanges() {
+    const jsonEditor = document.getElementById('step3-json-editor');
+    if (originalStep3Data) {
+        jsonEditor.value = JSON.stringify(originalStep3Data, null, 2);
+        currentStep3Data = JSON.parse(JSON.stringify(originalStep3Data)); // Deep copy
+        updateFormattedView(currentStep3Data);
+        console.log('JSON editor reset to original data');
+    }
+}
+
+// Update the formatted view with new data
+function updateFormattedView(data) {
+    const formattedView = document.getElementById('formatted-data-view');
+    if (!formattedView) return;
+
+    // Update summary stats
+    updateSummaryStats(data);
+
+    // Update form fields table
+    updateFormFieldsTable(data.extracted_data || {});
+
+    // Update table data
+    updateTableData(data.table_data || []);
+}
+
+// Update summary statistics
+function updateSummaryStats(data) {
+    const summarySection = formattedView.querySelector('.alert');
+    if (summarySection && data.extraction_summary) {
+        const summary = data.extraction_summary;
+
+        // Update counts
+        const fieldCountEl = summarySection.querySelector('.col-4:first-child strong');
+        const tableCountEl = summarySection.querySelector('.col-4:nth-child(2) strong');
+        const rowCountEl = summarySection.querySelector('.col-4:nth-child(3) strong');
+
+        if (fieldCountEl) fieldCountEl.textContent = summary.total_extracted_fields || 0;
+        if (tableCountEl) tableCountEl.textContent = summary.total_extracted_tables || 0;
+        if (rowCountEl) rowCountEl.textContent = summary.total_table_rows_extracted || 0;
+    }
+}
+
+// Update form fields table
+function updateFormFieldsTable(extractedData) {
+    const tableBody = document.querySelector('#formatted-data-view .table tbody');
+    if (!tableBody) return;
+
+    // Clear existing rows
+    tableBody.innerHTML = '';
+
+    // Add updated rows
+    Object.entries(extractedData).forEach(([field, value]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${field}</strong></td>
+            <td>
+                ${value ? `<span class="text-success">${value}</span>` : '<span class="text-muted">null</span>'}
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Update form fields count in header
+    const formFieldsHeader = document.querySelector('#formatted-data-view h6');
+    if (formFieldsHeader) {
+        const count = Object.keys(extractedData).length;
+        formFieldsHeader.innerHTML = `<i class="fas fa-user"></i> Form Fields (${count})`;
+    }
+}
+
+// Update table data cards
+function updateTableData(tableData) {
+    const tableSection = document.querySelector('#formatted-data-view .mb-3:last-child');
+    if (!tableSection) return;
+
+    // Remove existing table cards (but keep the header)
+    const existingCards = tableSection.querySelectorAll('.card');
+    existingCards.forEach(card => card.remove());
+
+    // Add updated table cards
+    tableData.forEach(table => {
+        const card = document.createElement('div');
+        card.className = 'card mb-3';
+        card.style.borderLeft = '4px solid #007bff';
+
+        const headerHTML = `
+            <div class="card-header py-2">
+                <h6 class="mb-0">${table.table_name || 'Unknown Table'}</h6>
+                <small class="text-muted">${(table.rows || []).length} rows</small>
+            </div>
+        `;
+
+        let bodyHTML = '<div class="card-body p-2">';
+
+        if (table.rows && table.rows.length > 0) {
+            bodyHTML += '<div class="table-responsive"><table class="table table-sm table-hover">';
+            bodyHTML += '<thead class="table-secondary"><tr>';
+
+            // Headers
+            (table.headers || []).forEach(header => {
+                bodyHTML += `<th style="font-size: 0.85em;">${header}</th>`;
+            });
+            bodyHTML += '</tr></thead><tbody>';
+
+            // Rows
+            table.rows.forEach(row => {
+                bodyHTML += '<tr>';
+                (table.headers || []).forEach(header => {
+                    const value = row[header];
+                    bodyHTML += `<td style="font-size: 0.85em;">
+                        ${value ? `<span class="text-success">${value}</span>` : '<span class="text-muted">null</span>'}
+                    </td>`;
+                });
+                bodyHTML += '</tr>';
+            });
+
+            bodyHTML += '</tbody></table></div>';
+        } else {
+            bodyHTML += '<p class="text-muted mb-0">No data extracted</p>';
+        }
+
+        bodyHTML += '</div>';
+        card.innerHTML = headerHTML + bodyHTML;
+        tableSection.appendChild(card);
+    });
+}
+
+// Mark JSON as edited and show indicator
+function markJsonEdited() {
+    const indicator = document.getElementById('json-edited-indicator');
+    if (indicator) {
+        indicator.style.display = 'block';
+    }
+
+    // Enable apply button if it exists
+    const applyBtn = document.getElementById('apply-json-btn');
+    if (applyBtn) {
+        applyBtn.disabled = false;
+    }
+}
+
+$(document).ready(function() {
+    // Initialize Step 2 JSON editor data
+    const jsonContent = document.getElementById('json-content');
+    if (jsonContent) {
+        try {
+            const textContent = jsonContent.textContent || jsonContent.innerText;
+            originalJsonData = JSON.parse(textContent);
+        } catch (e) {
+            console.log('Could not parse original JSON for editor');
+        }
+    }
+
+    // Initialize Step 3 JSON editor data
+    const step3JsonEditor = document.getElementById('step3-json-editor');
+    if (step3JsonEditor) {
+        try {
+            originalStep3Data = JSON.parse(step3JsonEditor.value);
+            currentStep3Data = JSON.parse(JSON.stringify(originalStep3Data)); // Deep copy
+            console.log('Step 3 JSON editor initialized with original data');
+        } catch (e) {
+            console.log('Could not parse Step 3 original JSON data');
+        }
+    }
+
+    // Auto-resize PDF containers when window resizes
+    $(window).resize(function() {
+        const containers = ['#step3-pdf-container'];
+        containers.forEach(function(containerId) {
+            const container = $(containerId);
+            if (container.length) {
+                const parentHeight = container.parent().height();
+                if (parentHeight > 400) {
+                    container.css('height', Math.min(parentHeight - 100, 700) + 'px');
+                }
+            }
+        });
+    });
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+# Core Flask web framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# PDF processing
+PyMuPDF==1.26.4
+
+# AI/OpenAI integration
+openai==1.107.1
+
+# Image processing (used in vision_extractor.py)
+Pillow==11.3.0
+
+# Environment configuration
+python-dotenv==1.0.0

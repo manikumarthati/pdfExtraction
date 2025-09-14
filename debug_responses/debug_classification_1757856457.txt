@@ -1,0 +1,317 @@
+=== CLAUDE ENHANCED DEBUG SESSION ===
+UPDATED CODE VERSION: 2025-09-13 NEW FORMAT
+Task Type: classification
+Model: gpt-3.5-turbo
+Temperature: 0.0
+Max Tokens: 800
+Timestamp: 1757856457.7157974
+Request Time: 2025-09-14 18:57:37
+================================================================================
+PROMPT SENT TO LLM:
+--------------------------------------------------------------------------------
+
+    Analyze this PDF page and classify its structure. 
+
+    Document Info:
+    - Total text length: 3130 characters
+    - Total text blocks: 254
+    
+    Sample text content:
+    Employee Profile
+    Velorynt Labs
+Company (37546)
+Period:
+12/17/2024 to 12/26/2024
+Page
+65
+RateCode
+Description
+Rate
+Salary
+Effective
+Dates
+Caroline Jones
+Stream Apt. 219 
+Emp Id
+ 4632
+ Status
+A
+ Emp Type
+ Home #
+509-121-3247
+Riverton, UT           
+SSN
+088-39-6286
+ Position
+ Statutory
+0.00
+ Work #
+47589
+ DOB
+12/26/2001(22)
+ Title
+ Seasonal
+0.00
+ Ext.
+ Gender
+M
+ Pay Group
+ Domestic Emp
+No
+ Email
+ Marital Status
+S
+ Job Code
+ Probation
+0.00
+ Mail Stop
+ Hire Date
+04/19/2023
+ Visa Type
+ Tax Form
+W2
+ Union
+ Nickname
+ Rehire Date
+ Exp
+ WCC
+8810
+ Union Date
+ surname
+ Term Date
+ Citizen
+ EEOC
+ Collect Dues
+No
+ Prior Last
+ Term Reason
+ I9 Verified
+No
+ Supervisor ID
+ Paid Init. Fees
+No
+ Disability
+ Adj Sen Date
+ I9 Reverify
+ Name
+ Veteran
+ Smoker
+No
+ Pension
+No
+ Deceased
+No
+ Def Comp
+No
+ Legal Rep
+No
+Rate/Salary Information
+ AutoPay
+Locations
+605
+ Pay Frequency
+B
+Positions
+700
+ OT Exempt
+No
+ Default Hours
+0.00
+Base
+Base Rate
+19.00
+04/19/2024 to 12/31/2100
+Base
+Base Rate
+18.00
+04/28/2023 to 04/18/2024
+Tax Information
+Employee Tax
+Status
+Add'l Amount 
+Effective Dates
+Default
+MED
+Medicare
+0.00
+04/28/2023 to12/31/2100
+Yes
+SS
+OASDI
+0.00
+04/28/2023 to12/31/2100
+Yes
+FITW
+Federal Income Tax
+S-0
+0.00
+04/28/2023 to12/31/2100
+Yes
+MN
+Minnesota SITW
+S-1
+0.00
+04/28/2023 to12/31/2100
+Yes
+EmployerTax
+Effective
+Dates
+Default
+MED-R
+Medicare - Employer 04/28/2023 to 12/31/2100
+SS-R
+OASDI - Employer
+04/28/2023 to 12/31/2100
+FUTA
+Fed Unemployment
+04/28/2023 to 12/31/2100
+MNAST Minnesota Federal Lo 04/28/2023 to 12/31/2100
+MNDW Workforce Enhancem 04/28/2023 to 12/31/2100
+MNSUI Minnesota SUI
+04/28/2023 to 12/31/2100
+Deduction Information
+Code
+Deduction
+Rate
+CalcCode
+Frequency
+Goal/Paid
+Min/Max/Annual Max
+Arrears
+Agency
+Effective
+Dates
+401KC
+401K Contribution100.00
+0.00/0.00
+0.00/0.00/0.00
+0.00
+07/01/2023 to 12/31/2100
+AutoPay Information
+No AutoPay Information
+Direct Deposit Information
+Sequence No. Transit No. Account No.
+Checking? Account Name
+Amount Code
+Amount Prenote Date
+Effective
+Dates
+Exclude Special
+99.00
+296075933 2294694696    
+Yes
+Caroline  
+%
+100.00 04/28/2023
+04/01/2023 to 12/31/2100 No
+Labor Allocation Information
+No Labor Allocation Information
+Fringe Benefit Information
+ECode
+CalcCode Rate Code
+Rate
+Rate Per
+Amount Tabled?  Units
+Frequency Goal/Paid/Goal Bal.
+Min/Max/Ann. Max
+Effective
+Dates
+STD
+0.00
+9.50 No
+0.00
+ML
+0.00/0.00/0.00
+0.00/0.00/0.00
+08/30/2024 to 12/31/2100
+Benefit Accrual Information
+BCode
+Rate
+Amount Hours
+Max/Carryover Max Length of Service
+Hours: Used/Avail/Total/Prob
+Dollars: Used/Avail/Total/Prob
+Effective
+Dates
+ESST
+0.00
+0.00 0.00
+0.00/0.00
+0.00/14.11/0.00/0.00
+0.00/257.31/0.00/0.00
+01/01/2024 to 06/01/2024
+PTO1
+0.00
+0.00 0.00
+0.00/0.00
+23.00/39.36/0.00/0.00
+437.00/747.84/0.00/0.00
+06/02/2024 to 12/31/2100
+PTO2
+0.00
+0.00 0.00
+0.00/0.00
+0.00/38.31/0.00/0.00
+0.00/689.58/0.00/0.00
+04/19/2023 to 09/09/2023
+401k Detail Information
+No 401k Detail Information
+Review Information
+No Review Information
+Emergency Contact Information
+CBIZ HCM
+Phone: (800) 815-3023  Fax: (877) 282-3016
+Run Date:
+Run Time:
+12/26/24
+11:06 AM
+Locations
+Positions
+Profile © 1995-2024 MPAY
+Employee
+Jone
+
+    
+    Classify this page as one of:
+    1. "form" - Contains form fields with labels and values (like applications, invoices)
+    2. "table" - Contains tabular data with rows and columns
+    3. "mixed" - Contains both form elements and tables
+    
+    Also identify the main regions and provide confidence score.
+    
+    You MUST respond with valid JSON only. No additional text or explanation.
+    
+    {
+        "classification": "form|table|mixed",
+        "confidence": 0.85,
+        "reasoning": "Brief explanation of classification",
+        "regions": [
+            {
+                "type": "form|table", 
+                "description": "Description of this region",
+                "estimated_bounds": "top|middle|bottom"
+            }
+        ]
+    }
+    
+================================================================================
+RAW RESPONSE FROM LLM:
+--------------------------------------------------------------------------------
+{
+    "classification": "mixed",
+    "confidence": 0.9,
+    "reasoning": "The page contains a mix of form-like structured data (employee profile information) and tabular data (rate/salary information, tax information, deduction information, etc.)",
+    "regions": [
+        {
+            "type": "form",
+            "description": "Employee Profile Information",
+            "estimated_bounds": "top"
+        },
+        {
+            "type": "table",
+            "description": "Rate/Salary Information, Tax Information, Deduction Information, AutoPay Information, Labor Allocation Information, Fringe Benefit Information, Benefit Accrual Information, 401k Detail Information, Review Information, Emergency Contact Information",
+            "estimated_bounds": "middle"
+        }
+    ]
+}
+================================================================================

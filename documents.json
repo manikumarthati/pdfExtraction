@@ -1,0 +1,644 @@
+[
+  {
+    "id": "43acb597-abe0-4562-9b32-ebde97228cf0",
+    "filename": "20250914_185729_obfuscated_fake_cbiz_prof_10_pages_1.pdf",
+    "filepath": "uploads\\20250914_185729_obfuscated_fake_cbiz_prof_10_pages_1.pdf",
+    "upload_time": "2025-09-14T18:57:29.208778",
+    "current_step": 3,
+    "is_completed": true,
+    "step1_result": {
+      "classification": "mixed",
+      "confidence": 0.9,
+      "reasoning": "The page contains a mix of form-like structured data (employee profile information) and tabular data (rate/salary information, tax information, deduction information, etc.)",
+      "regions": [
+        {
+          "type": "form",
+          "description": "Employee Profile Information",
+          "estimated_bounds": "top"
+        },
+        {
+          "type": "table",
+          "description": "Rate/Salary Information, Tax Information, Deduction Information, AutoPay Information, Labor Allocation Information, Fringe Benefit Information, Benefit Accrual Information, 401k Detail Information, Review Information, Emergency Contact Information",
+          "estimated_bounds": "middle"
+        }
+      ],
+      "page_data": {
+        "total_pages": 1,
+        "page_width": 612.0,
+        "page_height": 792.0
+      },
+      "human_validated": true,
+      "validation_timestamp": "2025-09-14T18:57:51.298803"
+    },
+    "step2_result": {
+      "form_fields": [
+        "Employee Name",
+        "Emp Id",
+        "Status",
+        "Emp Type",
+        "Home #",
+        "SSN",
+        "Position",
+        "Work #",
+        "DOB",
+        "Title",
+        "Ext.",
+        "Gender",
+        "Pay Group",
+        "Domestic Emp",
+        "Email",
+        "Marital Status",
+        "Job Code",
+        "Mail Stop",
+        "Hire Date",
+        "Visa Type",
+        "Tax Form",
+        "Union",
+        "Nickname",
+        "Rehire Date",
+        "Exp",
+        "WCC",
+        "Union Date",
+        "Surname",
+        "Term Date",
+        "Citizen",
+        "EEOC",
+        "Collect Dues",
+        "Prior Last",
+        "Term Reason",
+        "I9 Verified",
+        "Supervisor ID",
+        "Paid Init. Fees",
+        "Disability",
+        "Adj Sen Date",
+        "I9 Reverify",
+        "Name",
+        "Veteran",
+        "Smoker",
+        "Pension",
+        "Deceased",
+        "Def Comp",
+        "Legal Rep"
+      ],
+      "tables": [
+        {
+          "table_name": "Rate/Salary Information",
+          "headers": [
+            "RateCode",
+            "Description",
+            "Rate",
+            "Salary",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Tax Information",
+          "headers": [
+            "Employee Tax",
+            "Status",
+            "Add'l Amount",
+            "Effective Dates",
+            "Default"
+          ]
+        },
+        {
+          "table_name": "Employer Tax",
+          "headers": [
+            "Effective",
+            "Dates",
+            "Default"
+          ]
+        },
+        {
+          "table_name": "Deduction Information",
+          "headers": [
+            "Code",
+            "Deduction",
+            "Rate",
+            "CalcCode",
+            "Frequency",
+            "Goal/Paid",
+            "Min/Max/Annual Max",
+            "Arrears",
+            "Agency",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Direct Deposit Information",
+          "headers": [
+            "Sequence No.",
+            "Transit No.",
+            "Account No.",
+            "Checking?",
+            "Account Name",
+            "Amount Code",
+            "Amount",
+            "Prenote Date",
+            "Effective Dates",
+            "Exclude Special"
+          ]
+        },
+        {
+          "table_name": "Fringe Benefit Information",
+          "headers": [
+            "ECode",
+            "CalcCode",
+            "Rate Code",
+            "Rate",
+            "Rate Per",
+            "Amount Tabled?",
+            "Units",
+            "Frequency",
+            "Goal/Paid/Goal Bal.",
+            "Min/Max/Ann. Max",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Benefit Accrual Information",
+          "headers": [
+            "BCode",
+            "Rate",
+            "Amount",
+            "Hours",
+            "Max/Carryover Max",
+            "Length of Service",
+            "Hours: Used/Avail/Total/Prob",
+            "Dollars: Used/Avail/Total/Prob",
+            "Effective Dates"
+          ]
+        }
+      ],
+      "summary": {
+        "total_form_fields": 47,
+        "total_tables": 7,
+        "iteration": 1
+      },
+      "field_type": "mixed",
+      "notes": "",
+      "human_validated": true,
+      "validation_timestamp": "2025-09-14T18:58:26.339683"
+    },
+    "step2_validated_json": {
+      "form_fields": [
+        "Employee Name",
+        "Emp Id",
+        "Status",
+        "Emp Type",
+        "Home #",
+        "SSN",
+        "Position",
+        "Work #",
+        "DOB",
+        "Title",
+        "Ext.",
+        "Gender",
+        "Pay Group",
+        "Domestic Emp",
+        "Email",
+        "Marital Status",
+        "Job Code",
+        "Mail Stop",
+        "Hire Date",
+        "Visa Type",
+        "Tax Form",
+        "Union",
+        "Nickname",
+        "Rehire Date",
+        "Exp",
+        "WCC",
+        "Union Date",
+        "Surname",
+        "Term Date",
+        "Citizen",
+        "EEOC",
+        "Collect Dues",
+        "Prior Last",
+        "Term Reason",
+        "I9 Verified",
+        "Supervisor ID",
+        "Paid Init. Fees",
+        "Disability",
+        "Adj Sen Date",
+        "I9 Reverify",
+        "Name",
+        "Veteran",
+        "Smoker",
+        "Pension",
+        "Deceased",
+        "Def Comp",
+        "Legal Rep"
+      ],
+      "tables": [
+        {
+          "table_name": "Rate/Salary Information",
+          "headers": [
+            "RateCode",
+            "Description",
+            "Rate",
+            "Salary",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Tax Information",
+          "headers": [
+            "Employee Tax",
+            "Status",
+            "Add'l Amount",
+            "Effective Dates",
+            "Default"
+          ]
+        },
+        {
+          "table_name": "Employer Tax",
+          "headers": [
+            "Effective",
+            "Dates",
+            "Default"
+          ]
+        },
+        {
+          "table_name": "Deduction Information",
+          "headers": [
+            "Code",
+            "Deduction",
+            "Rate",
+            "CalcCode",
+            "Frequency",
+            "Goal/Paid",
+            "Min/Max/Annual Max",
+            "Arrears",
+            "Agency",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Direct Deposit Information",
+          "headers": [
+            "Sequence No.",
+            "Transit No.",
+            "Account No.",
+            "Checking?",
+            "Account Name",
+            "Amount Code",
+            "Amount",
+            "Prenote Date",
+            "Effective Dates",
+            "Exclude Special"
+          ]
+        },
+        {
+          "table_name": "Fringe Benefit Information",
+          "headers": [
+            "ECode",
+            "CalcCode",
+            "Rate Code",
+            "Rate",
+            "Rate Per",
+            "Amount Tabled?",
+            "Units",
+            "Frequency",
+            "Goal/Paid/Goal Bal.",
+            "Min/Max/Ann. Max",
+            "Effective Dates"
+          ]
+        },
+        {
+          "table_name": "Benefit Accrual Information",
+          "headers": [
+            "BCode",
+            "Rate",
+            "Amount",
+            "Hours",
+            "Max/Carryover Max",
+            "Length of Service",
+            "Hours: Used/Avail/Total/Prob",
+            "Dollars: Used/Avail/Total/Prob",
+            "Effective Dates"
+          ]
+        }
+      ],
+      "summary": {
+        "total_form_fields": 47,
+        "total_tables": 7,
+        "iteration": 1
+      },
+      "field_type": "mixed",
+      "notes": "",
+      "human_validated": true,
+      "validation_timestamp": "2025-09-14T18:58:26.339683"
+    },
+    "step3_result": {
+      "extracted_data": {
+        "Employee Name": "Caroline Jones",
+        "Emp Id": "4632",
+        "Status": "A",
+        "Emp Type": null,
+        "Home #": "509-121-3247",
+        "SSN": "088-39-6286",
+        "Position": "Statutory",
+        "Work #": "47589",
+        "DOB": "12/26/2001(22)",
+        "Title": "Seasonal",
+        "Ext.": null,
+        "Gender": "M",
+        "Pay Group": null,
+        "Domestic Emp": "No",
+        "Email": null,
+        "Marital Status": "S",
+        "Job Code": "Probation",
+        "Mail Stop": null,
+        "Hire Date": "04/19/2023",
+        "Visa Type": null,
+        "Tax Form": "W2",
+        "Union": null,
+        "Nickname": null,
+        "Rehire Date": null,
+        "Exp": null,
+        "WCC": "8810",
+        "Union Date": null,
+        "Surname": null,
+        "Term Date": null,
+        "Citizen": null,
+        "EEOC": null,
+        "Collect Dues": "No",
+        "Prior Last": null,
+        "Term Reason": null,
+        "I9 Verified": "No",
+        "Supervisor ID": null,
+        "Paid Init. Fees": "No",
+        "Disability": null,
+        "Adj Sen Date": null,
+        "I9 Reverify": null,
+        "Name": null,
+        "Veteran": null,
+        "Smoker": "No",
+        "Pension": "No",
+        "Deceased": "No",
+        "Def Comp": "No",
+        "Legal Rep": "No"
+      },
+      "table_data": [
+        {
+          "table_name": "Rate/Salary Information",
+          "headers": [
+            "RateCode",
+            "Description",
+            "Rate",
+            "Salary",
+            "Effective Dates"
+          ],
+          "rows": [
+            {
+              "RateCode": "Base",
+              "Description": "Base Rate",
+              "Rate": "19.00",
+              "Salary": null,
+              "Effective Dates": "04/19/2024 to 12/31/2100"
+            },
+            {
+              "RateCode": "Base",
+              "Description": "Base Rate",
+              "Rate": "18.00",
+              "Salary": null,
+              "Effective Dates": "04/28/2023 to 04/18/2024"
+            }
+          ]
+        },
+        {
+          "table_name": "Tax Information",
+          "headers": [
+            "Employee Tax",
+            "Status",
+            "Add'l Amount",
+            "Effective Dates",
+            "Default"
+          ],
+          "rows": [
+            {
+              "Employee Tax": "MED",
+              "Status": "Medicare",
+              "Add'l Amount": "0.00",
+              "Effective Dates": "04/28/2023 to12/31/2100",
+              "Default": "Yes"
+            },
+            {
+              "Employee Tax": "SS",
+              "Status": "OASDI",
+              "Add'l Amount": "0.00",
+              "Effective Dates": "04/28/2023 to12/31/2100",
+              "Default": "Yes"
+            },
+            {
+              "Employee Tax": "FITW",
+              "Status": "Federal Income Tax",
+              "Add'l Amount": "S-0",
+              "Effective Dates": "04/28/2023 to12/31/2100",
+              "Default": "Yes"
+            },
+            {
+              "Employee Tax": "MN",
+              "Status": "Minnesota SITW",
+              "Add'l Amount": "S-1",
+              "Effective Dates": "04/28/2023 to12/31/2100",
+              "Default": "Yes"
+            }
+          ]
+        },
+        {
+          "table_name": "Employer Tax",
+          "headers": [
+            "Effective",
+            "Dates",
+            "Default"
+          ],
+          "rows": [
+            {
+              "Effective": "MED-R",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            },
+            {
+              "Effective": "SS-R",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            },
+            {
+              "Effective": "FUTA",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            },
+            {
+              "Effective": "MNAST",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            },
+            {
+              "Effective": "MNDW",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            },
+            {
+              "Effective": "MNSUI",
+              "Dates": "04/28/2023 to 12/31/2100",
+              "Default": null
+            }
+          ]
+        },
+        {
+          "table_name": "Deduction Information",
+          "headers": [
+            "Code",
+            "Deduction",
+            "Rate",
+            "CalcCode",
+            "Frequency",
+            "Goal/Paid",
+            "Min/Max/Annual Max",
+            "Arrears",
+            "Agency",
+            "Effective Dates"
+          ],
+          "rows": [
+            {
+              "Code": "401KC",
+              "Deduction": "401K Contribution",
+              "Rate": "100.00",
+              "CalcCode": null,
+              "Frequency": null,
+              "Goal/Paid": "0.00/0.00",
+              "Min/Max/Annual Max": "0.00/0.00/0.00",
+              "Arrears": "0.00",
+              "Agency": null,
+              "Effective Dates": "07/01/2023 to 12/31/2100"
+            }
+          ]
+        },
+        {
+          "table_name": "Direct Deposit Information",
+          "headers": [
+            "Sequence No.",
+            "Transit No.",
+            "Account No.",
+            "Checking?",
+            "Account Name",
+            "Amount Code",
+            "Amount",
+            "Prenote Date",
+            "Effective Dates",
+            "Exclude Special"
+          ],
+          "rows": [
+            {
+              "Sequence No.": "99.00",
+              "Transit No.": "296075933",
+              "Account No.": "2294694696",
+              "Checking?": "Yes",
+              "Account Name": "Caroline",
+              "Amount Code": "%",
+              "Amount": "100.00",
+              "Prenote Date": "04/28/2023",
+              "Effective Dates": "04/01/2023 to 12/31/2100",
+              "Exclude Special": "No"
+            }
+          ]
+        },
+        {
+          "table_name": "Fringe Benefit Information",
+          "headers": [
+            "ECode",
+            "CalcCode",
+            "Rate Code",
+            "Rate",
+            "Rate Per",
+            "Amount Tabled?",
+            "Units",
+            "Frequency",
+            "Goal/Paid/Goal Bal.",
+            "Min/Max/Ann. Max",
+            "Effective Dates"
+          ],
+          "rows": [
+            {
+              "ECode": "STD",
+              "CalcCode": null,
+              "Rate Code": null,
+              "Rate": "0.00",
+              "Rate Per": "9.50",
+              "Amount Tabled?": "No",
+              "Units": "0.00",
+              "Frequency": "ML",
+              "Goal/Paid/Goal Bal.": "0.00/0.00/0.00",
+              "Min/Max/Ann. Max": "0.00/0.00/0.00",
+              "Effective Dates": "08/30/2024 to 12/31/2100"
+            }
+          ]
+        },
+        {
+          "table_name": "Benefit Accrual Information",
+          "headers": [
+            "BCode",
+            "Rate",
+            "Amount",
+            "Hours",
+            "Max/Carryover Max",
+            "Length of Service",
+            "Hours: Used/Avail/Total/Prob",
+            "Dollars: Used/Avail/Total/Prob",
+            "Effective Dates"
+          ],
+          "rows": [
+            {
+              "BCode": "ESST",
+              "Rate": "0.00",
+              "Amount": "0.00",
+              "Hours": "0.00",
+              "Max/Carryover Max": "0.00/0.00",
+              "Length of Service": null,
+              "Hours: Used/Avail/Total/Prob": "0.00/14.11/0.00/0.00",
+              "Dollars: Used/Avail/Total/Prob": "0.00/257.31/0.00/0.00",
+              "Effective Dates": "01/01/2024 to 06/01/2024"
+            },
+            {
+              "BCode": "PTO1",
+              "Rate": "0.00",
+              "Amount": "0.00",
+              "Hours": "0.00",
+              "Max/Carryover Max": "0.00/0.00",
+              "Length of Service": null,
+              "Hours: Used/Avail/Total/Prob": "23.00/39.36/0.00/0.00",
+              "Dollars: Used/Avail/Total/Prob": "437.00/747.84/0.00/0.00",
+              "Effective Dates": "06/02/2024 to 12/31/2100"
+            },
+            {
+              "BCode": "PTO2",
+              "Rate": "0.00",
+              "Amount": "0.00",
+              "Hours": "0.00",
+              "Max/Carryover Max": "0.00/0.00",
+              "Length of Service": null,
+              "Hours: Used/Avail/Total/Prob": "0.00/38.31/0.00/0.00",
+              "Dollars: Used/Avail/Total/Prob": "0.00/689.58/0.00/0.00",
+              "Effective Dates": "04/19/2023 to 09/09/2023"
+            }
+          ]
+        }
+      ],
+      "extraction_summary": {
+        "total_extracted_fields": 47,
+        "total_extracted_tables": 7,
+        "total_table_rows_extracted": 18,
+        "extraction_success": true,
+        "extraction_method": "unified_schema_based",
+        "extraction_confidence": 0.95
+      }
+    },
+    "feedback_history": [],
+    "validation_page_result": null,
+    "validation_page_num": null,
+    "enhanced_template": null,
+    "multipage_processing_status": null
+  }
+]

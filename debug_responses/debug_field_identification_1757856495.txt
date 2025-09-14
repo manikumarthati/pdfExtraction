@@ -1,0 +1,523 @@
+=== CLAUDE ENHANCED DEBUG SESSION ===
+UPDATED CODE VERSION: 2025-09-13 NEW FORMAT
+Task Type: field_identification
+Model: gpt-4o
+Temperature: 0.0
+Max Tokens: 10000
+Timestamp: 1757856495.5438004
+Request Time: 2025-09-14 18:58:15
+================================================================================
+PROMPT SENT TO LLM:
+--------------------------------------------------------------------------------
+
+    You are a document structure specialist. Follow these very specific rules to identify and extract FORM FIELDS and TABLE HEADERS from the provided text.
+    *** CRITICAL RULES - READ FIRST ***
+    1. DO NOT include table headers in form_fields - they go ONLY in the tables section!
+    2. DO NOT include actual data values like "John Doe" or "12/26/2001" in field names!
+    3. Extract ONLY field labels like "Employee Name", "Birth Date", NOT their values!
+    4. Extract ONLY table column headers like "Rate", "Description", NOT table data!
+    5. Think Harder while extracting form fields. DO not miss any field though they do not have value.
+
+    You are identifying document STRUCTURE ONLY - field labels and table headers.
+
+    Text to analyze:
+    Employee Profile
+    Velorynt Labs
+Company (37546)
+Period:
+12/17/2024 to 12/26/2024
+Page
+65
+RateCode
+Description
+Rate
+Salary
+Effective
+Dates
+Caroline Jones
+Stream Apt. 219 
+Emp Id
+ 4632
+ Status
+A
+ Emp Type
+ Home #
+509-121-3247
+Riverton, UT           
+SSN
+088-39-6286
+ Position
+ Statutory
+0.00
+ Work #
+47589
+ DOB
+12/26/2001(22)
+ Title
+ Seasonal
+0.00
+ Ext.
+ Gender
+M
+ Pay Group
+ Domestic Emp
+No
+ Email
+ Marital Status
+S
+ Job Code
+ Probation
+0.00
+ Mail Stop
+ Hire Date
+04/19/2023
+ Visa Type
+ Tax Form
+W2
+ Union
+ Nickname
+ Rehire Date
+ Exp
+ WCC
+8810
+ Union Date
+ surname
+ Term Date
+ Citizen
+ EEOC
+ Collect Dues
+No
+ Prior Last
+ Term Reason
+ I9 Verified
+No
+ Supervisor ID
+ Paid Init. Fees
+No
+ Disability
+ Adj Sen Date
+ I9 Reverify
+ Name
+ Veteran
+ Smoker
+No
+ Pension
+No
+ Deceased
+No
+ Def Comp
+No
+ Legal Rep
+No
+Rate/Salary Information
+ AutoPay
+Locations
+605
+ Pay Frequency
+B
+Positions
+700
+ OT Exempt
+No
+ Default Hours
+0.00
+Base
+Base Rate
+19.00
+04/19/2024 to 12/31/2100
+Base
+Base Rate
+18.00
+04/28/2023 to 04/18/2024
+Tax Information
+Employee Tax
+Status
+Add'l Amount 
+Effective Dates
+Default
+MED
+Medicare
+0.00
+04/28/2023 to12/31/2100
+Yes
+SS
+OASDI
+0.00
+04/28/2023 to12/31/2100
+Yes
+FITW
+Federal Income Tax
+S-0
+0.00
+04/28/2023 to12/31/2100
+Yes
+MN
+Minnesota SITW
+S-1
+0.00
+04/28/2023 to12/31/2100
+Yes
+EmployerTax
+Effective
+Dates
+Default
+MED-R
+Medicare - Employer 04/28/2023 to 12/31/2100
+SS-R
+OASDI - Employer
+04/28/2023 to 12/31/2100
+FUTA
+Fed Unemployment
+04/28/2023 to 12/31/2100
+MNAST Minnesota Federal Lo 04/28/2023 to 12/31/2100
+MNDW Workforce Enhancem 04/28/2023 to 12/31/2100
+MNSUI Minnesota SUI
+04/28/2023 to 12/31/2100
+Deduction Information
+Code
+Deduction
+Rate
+CalcCode
+Frequency
+Goal/Paid
+Min/Max/Annual Max
+Arrears
+Agency
+Effective
+Dates
+401KC
+401K Contribution100.00
+0.00/0.00
+0.00/0.00/0.00
+0.00
+07/01/2023 to 12/31/2100
+AutoPay Information
+No AutoPay Information
+Direct Deposit Information
+Sequence No. Transit No. Account No.
+Checking? Account Name
+Amount Code
+Amount Prenote Date
+Effective
+Dates
+Exclude Special
+99.00
+296075933 2294694696    
+Yes
+Caroline  
+%
+100.00 04/28/2023
+04/01/2023 to 12/31/2100 No
+Labor Allocation Information
+No Labor Allocation Information
+Fringe Benefit Information
+ECode
+CalcCode Rate Code
+Rate
+Rate Per
+Amount Tabled?  Units
+Frequency Goal/Paid/Goal Bal.
+Min/Max/Ann. Max
+Effective
+Dates
+STD
+0.00
+9.50 No
+0.00
+ML
+0.00/0.00/0.00
+0.00/0.00/0.00
+08/30/2024 to 12/31/2100
+Benefit Accrual Information
+BCode
+Rate
+Amount Hours
+Max/Carryover Max Length of Service
+Hours: Used/Avail/Total/Prob
+Dollars: Used/Avail/Total/Prob
+Effective
+Dates
+ESST
+0.00
+0.00 0.00
+0.00/0.00
+0.00/14.11/0.00/0.00
+0.00/257.31/0.00/0.00
+01/01/2024 to 06/01/2024
+PTO1
+0.00
+0.00 0.00
+0.00/0.00
+23.00/39.36/0.00/0.00
+437.00/747.84/0.00/0.00
+06/02/2024 to 12/31/2100
+PTO2
+0.00
+0.00 0.00
+0.00/0.00
+0.00/38.31/0.00/0.00
+0.00/689.58/0.00/0.00
+04/19/2023 to 09/09/2023
+401k Detail Information
+No 401k Detail Information
+Review Information
+No Review Information
+Emergency Contact Information
+CBIZ HCM
+Phone: (800) 815-3023  Fax: (877) 282-3016
+Run Date:
+Run Time:
+12/26/24
+11:06 AM
+Locations
+Positions
+Profile © 1995-2024 MPAY
+Employee
+Jone
+
+
+    User feedback and instructions: No specific user feedback provided. Perform initial extraction with high accuracy.
+
+    ## EXTRACTION GUIDELINES
+
+    **FORM FIELDS (individual labeled data points):**
+    - Look for patterns like "Label:" followed by values
+    - Extract the LABEL part only (e.g., "Employee Name", "SSN", "DOB")
+    - NEVER extract the actual values (e.g., "Caroline Jones", "088-39-6286")
+    - These are typically scattered throughout the document as individual items
+
+    **TABLE HEADERS (column names in tabular data):**
+    - Look for column headers that appear above rows of data
+    - Extract headers like "Rate", "Description", "Effective Dates"
+    - These appear in organized tables with multiple rows of data below them
+    - DO NOT include these in form_fields - they go in tables section only!
+
+    **WHAT TO IGNORE:**
+    - Actual data values (names, numbers, dates)
+    - Section titles like "Employee Information" 
+    - Page headers/footers
+    - Table row data
+
+    ## User Feedback Integration
+    If user feedback is provided:
+    - Apply their corrections exactly as specified
+    - Add missing fields they mention
+    - Remove incorrectly identified items they highlight
+    - Follow their guidance on field vs table header classification
+
+    **REQUIRED JSON FORMAT:**
+    {
+        "form_fields": [
+            {
+                "field_name": "Employee Name"
+            },
+            {
+                "field_name": "Birth Date"  
+            }
+        ],
+        "tables": [
+            {
+                "table_name": "Rate/Salary Information",
+                "headers": ["RateCode", "Description", "Rate", "Effective Dates"]
+            }
+        ],
+        "extraction_summary": {
+            "total_form_fields": 2,
+            "total_tables": 1,
+            "refinement_iteration": 1
+        },
+        "feedback_response": "Brief note on how user feedback was incorporated"
+    }
+
+    *** FINAL REMINDER ***
+    - form_fields = individual field LABELS only (not table headers!)
+    - tables = table names with their column headers
+    - NO actual data values in either section!
+    
+================================================================================
+RAW RESPONSE FROM LLM:
+--------------------------------------------------------------------------------
+```json
+{
+    "form_fields": [
+        {
+            "field_name": "Employee Name"
+        },
+        {
+            "field_name": "Emp Id"
+        },
+        {
+            "field_name": "Status"
+        },
+        {
+            "field_name": "Emp Type"
+        },
+        {
+            "field_name": "Home #"
+        },
+        {
+            "field_name": "SSN"
+        },
+        {
+            "field_name": "Position"
+        },
+        {
+            "field_name": "Work #"
+        },
+        {
+            "field_name": "DOB"
+        },
+        {
+            "field_name": "Title"
+        },
+        {
+            "field_name": "Ext."
+        },
+        {
+            "field_name": "Gender"
+        },
+        {
+            "field_name": "Pay Group"
+        },
+        {
+            "field_name": "Domestic Emp"
+        },
+        {
+            "field_name": "Email"
+        },
+        {
+            "field_name": "Marital Status"
+        },
+        {
+            "field_name": "Job Code"
+        },
+        {
+            "field_name": "Mail Stop"
+        },
+        {
+            "field_name": "Hire Date"
+        },
+        {
+            "field_name": "Visa Type"
+        },
+        {
+            "field_name": "Tax Form"
+        },
+        {
+            "field_name": "Union"
+        },
+        {
+            "field_name": "Nickname"
+        },
+        {
+            "field_name": "Rehire Date"
+        },
+        {
+            "field_name": "Exp"
+        },
+        {
+            "field_name": "WCC"
+        },
+        {
+            "field_name": "Union Date"
+        },
+        {
+            "field_name": "Surname"
+        },
+        {
+            "field_name": "Term Date"
+        },
+        {
+            "field_name": "Citizen"
+        },
+        {
+            "field_name": "EEOC"
+        },
+        {
+            "field_name": "Collect Dues"
+        },
+        {
+            "field_name": "Prior Last"
+        },
+        {
+            "field_name": "Term Reason"
+        },
+        {
+            "field_name": "I9 Verified"
+        },
+        {
+            "field_name": "Supervisor ID"
+        },
+        {
+            "field_name": "Paid Init. Fees"
+        },
+        {
+            "field_name": "Disability"
+        },
+        {
+            "field_name": "Adj Sen Date"
+        },
+        {
+            "field_name": "I9 Reverify"
+        },
+        {
+            "field_name": "Name"
+        },
+        {
+            "field_name": "Veteran"
+        },
+        {
+            "field_name": "Smoker"
+        },
+        {
+            "field_name": "Pension"
+        },
+        {
+            "field_name": "Deceased"
+        },
+        {
+            "field_name": "Def Comp"
+        },
+        {
+            "field_name": "Legal Rep"
+        }
+    ],
+    "tables": [
+        {
+            "table_name": "Rate/Salary Information",
+            "headers": ["RateCode", "Description", "Rate", "Salary", "Effective Dates"]
+        },
+        {
+            "table_name": "Tax Information",
+            "headers": ["Employee Tax", "Status", "Add'l Amount", "Effective Dates", "Default"]
+        },
+        {
+            "table_name": "Employer Tax",
+            "headers": ["Effective", "Dates", "Default"]
+        },
+        {
+            "table_name": "Deduction Information",
+            "headers": ["Code", "Deduction", "Rate", "CalcCode", "Frequency", "Goal/Paid", "Min/Max/Annual Max", "Arrears", "Agency", "Effective Dates"]
+        },
+        {
+            "table_name": "Direct Deposit Information",
+            "headers": ["Sequence No.", "Transit No.", "Account No.", "Checking?", "Account Name", "Amount Code", "Amount", "Prenote Date", "Effective Dates", "Exclude Special"]
+        },
+        {
+            "table_name": "Fringe Benefit Information",
+            "headers": ["ECode", "CalcCode", "Rate Code", "Rate", "Rate Per", "Amount Tabled?", "Units", "Frequency", "Goal/Paid/Goal Bal.", "Min/Max/Ann. Max", "Effective Dates"]
+        },
+        {
+            "table_name": "Benefit Accrual Information",
+            "headers": ["BCode", "Rate", "Amount", "Hours", "Max/Carryover Max", "Length of Service", "Hours: Used/Avail/Total/Prob", "Dollars: Used/Avail/Total/Prob", "Effective Dates"]
+        }
+    ],
+    "extraction_summary": {
+        "total_form_fields": 46,
+        "total_tables": 7,
+        "refinement_iteration": 1
+    },
+    "feedback_response": "No specific user feedback provided. Initial extraction performed with high accuracy."
+}
+```
+================================================================================
