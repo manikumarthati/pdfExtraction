@@ -111,6 +111,105 @@ class OpenAIService:
                 time.sleep(2 ** attempt)  # Exponential backoff
         
         return {"success": False, "error": "Maximum retries exceeded"}
+
+    def _make_gpt_request_with_system_user(self, system_prompt: str, user_prompt: str, task_type: str) -> Dict[str, Any]:
+        """Make a GPT request with separate system and user messages (like simple_pdf_parser.py)"""
+
+        # Get optimized config for this task
+        task_config = self.config.get_model_config(task_type)
+
+        request_start = time.time()
+
+        for attempt in range(self.config.MAX_RETRIES):
+            try:
+                response = self.client.chat.completions.create(
+                    model=task_config['model'],
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=task_config['temperature'],
+                    max_tokens=task_config['max_tokens'],
+                    timeout=self.config.TIMEOUT
+                )
+
+                # Track usage and cost if enabled
+                usage_info = {}
+                if self.config.ENABLE_COST_TRACKING:
+                    usage_info = self._track_usage(response, task_type, task_config['model'])
+
+                content = response.choices[0].message.content.strip()
+
+                # Save prompt and response for debugging
+                import os
+                debug_dir = "debug_responses"
+                os.makedirs(debug_dir, exist_ok=True)
+                debug_file = os.path.join(debug_dir, f"debug_system_user_{task_type}_{int(time.time())}.txt")
+                with open(debug_file, 'w', encoding='utf-8') as f:
+                    f.write(f"=== SYSTEM/USER PROMPT DEBUG SESSION ===\n")
+                    f.write(f"Task Type: {task_type}\n")
+                    f.write(f"Model: {task_config['model']}\n")
+                    f.write(f"Temperature: {task_config['temperature']}\n")
+                    f.write(f"Max Tokens: {task_config['max_tokens']}\n")
+                    f.write(f"Timestamp: {time.time()}\n")
+                    f.write(f"Request Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write("=" * 80 + "\n")
+                    f.write("SYSTEM PROMPT:\n")
+                    f.write("-" * 80 + "\n")
+                    f.write(system_prompt)
+                    f.write("\n" + "=" * 80 + "\n")
+                    f.write("USER PROMPT:\n")
+                    f.write("-" * 80 + "\n")
+                    f.write(user_prompt)
+                    f.write("\n" + "=" * 80 + "\n")
+                    f.write("RAW RESPONSE FROM LLM:\n")
+                    f.write("-" * 80 + "\n")
+                    f.write(content)
+                    f.write("\n" + "=" * 80 + "\n")
+                print(f"DEBUG - System/User prompt & response saved to: {debug_file}")
+
+                # Try to parse JSON, with fallback handling
+                try:
+                    # Handle JSON in code blocks like simple_pdf_parser.py
+                    if '```json' in content:
+                        json_start = content.find('```json') + 7
+                        json_end = content.find('```', json_start)
+                        content = content[json_start:json_end].strip()
+                    elif '```' in content:
+                        json_start = content.find('```') + 3
+                        json_end = content.rfind('```')
+                        content = content[json_start:json_end].strip()
+
+                    result = json.loads(content)
+                except json.JSONDecodeError:
+                    # Try multiple JSON extraction strategies
+                    result = self._extract_json_from_response(content, task_config['model'], task_type)
+                    if not result["success"]:
+                        return result
+                    result = result["data"]
+
+                return {
+                    "success": True,
+                    "data": result,
+                    "usage": usage_info,
+                    "model_used": task_config['model'],
+                    "task_type": task_type,
+                    "response_time": time.time() - request_start
+                }
+
+            except Exception as e:
+                if attempt == self.config.MAX_RETRIES - 1:
+                    return {
+                        "success": False,
+                        "error": f"System/User request failed after {self.config.MAX_RETRIES} attempts: {str(e)}",
+                        "model_used": task_config['model'],
+                        "task_type": task_type
+                    }
+
+                # Wait before retry
+                time.sleep(2 ** attempt)  # Exponential backoff
+
+        return {"success": False, "error": "Maximum retries exceeded"}
     
     def _extract_json_from_response(self, content: str, model: str, task_type: str) -> Dict[str, Any]:
         """Extract JSON from response using multiple fallback strategies"""
@@ -305,39 +404,52 @@ class OpenAIService:
         # Prepare feedback context including all historical feedback
         feedback_context = self._prepare_feedback_context(user_feedback, feedback_history)
         
-        # Use single comprehensive extraction prompt with enhanced feedback handling
-        prompt = self.prompts.COMPREHENSIVE_FIELD_EXTRACTION.format(
-            text=processed_text,
-            user_feedback=feedback_context
-        )
-        print(f"DEBUG - Comprehensive prompt length: {len(prompt)}")
-        
-        result = self._make_gpt_request(prompt, 'field_identification')
+        # Use focused comprehensive extraction with system/user prompt format like simple_pdf_parser.py
+        system_prompt = self.prompts.FOCUSED_COMPREHENSIVE_FIELD_EXTRACTION_SYSTEM
+
+        user_prompt = f"""CRITICAL DOCUMENT EXTRACTION - 100% ACCURACY REQUIRED
+
+You must extract ALL fields from this document with PERFECT precision. This is a critical document where missing or incorrect data is unacceptable.
+
+MANDATORY REQUIREMENTS:
+1. Extract the FULL NAME if present (check carefully - names must not be missed)
+2. Break down ALL addresses into Street, City, State, Zip components
+3. Preserve EXACT numbers with correct decimal places
+4. Align table columns EXACTLY - no shifting due to empty cells
+5. Extract ALL phone numbers, emails, dates with exact formatting
+6. Capture section headers exactly as written
+
+## User Feedback Integration
+{feedback_context}
+
+DOCUMENT TEXT TO ANALYZE:
+{processed_text}
+
+Return ONLY valid JSON in the exact format specified in the system prompt. Pay special attention to names and ensure no prominent data is missed."""
+
+        print(f"DEBUG - System prompt length: {len(system_prompt)}")
+        print(f"DEBUG - User prompt length: {len(user_prompt)}")
+
+        result = self._make_gpt_request_with_system_user(system_prompt, user_prompt, 'field_identification')
         print(f"DEBUG - Comprehensive extraction result: {result.get('success', False)}")
         
         if result["success"]:
-            # Enhance result with feedback metadata
+            # Return focused format as-is without conversion to see full LLM output
             data = result["data"]
+            print(f"DEBUG - Raw focused prompt output: {data}")
+            # data = self._convert_focused_to_flask_format(data)
             if user_feedback.strip():
                 data = self._enhance_result_with_feedback_metadata(data, user_feedback)
-            
-            # Ensure field_type is set based on what we found
+
+            # Skip field_type detection and simplified view creation for raw focused output
+            # Set a default field_type based on document metadata if available
             if not data.get("field_type"):
-                has_form_fields = data.get("form_fields") and len(data["form_fields"]) > 0
-                has_tables = data.get("tables") and len(data["tables"]) > 0
-                
-                if has_form_fields and has_tables:
-                    data["field_type"] = "mixed"
-                elif has_form_fields:
-                    data["field_type"] = "form"
-                elif has_tables:
-                    data["field_type"] = "table"
-                else:
-                    data["field_type"] = "unknown"
-            
-            # Create simplified view for UI display
-            data = self._create_simplified_view(data)
-            
+                doc_metadata = data.get("document_metadata", {})
+                data["field_type"] = doc_metadata.get("document_type", "unknown")
+
+            # Skip simplified view creation to show raw focused output
+            # data = self._create_simplified_view(data)
+
             return data
         else:
             return {
@@ -354,6 +466,87 @@ class OpenAIService:
                 "error": result["error"]
             }
     
+    def _convert_focused_to_flask_format(self, focused_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert focused prompt output format to Flask app expected format"""
+
+        print(f"DEBUG - Converting focused format, main keys: {list(focused_data.keys())}")
+
+        # Initialize Flask format structure
+        flask_data = {
+            "form_fields": [],
+            "tables": [],
+            "extraction_summary": {
+                "total_fields": 0,
+                "total_tables": 0,
+                "empty_fields": 0,
+                "confidence_score": 0.0,
+                "refinement_iteration": 1
+            }
+        }
+
+        # Extract document metadata if available
+        doc_metadata = focused_data.get("document_metadata", {})
+        extraction_summary = focused_data.get("extraction_summary", {})
+
+        # Handle main content structure
+        main_content = focused_data.get("main_content", {})
+
+        # Process single record format
+        single_record = main_content.get("single_record", {})
+        if single_record and "sections" in single_record:
+            sections = single_record["sections"]
+
+            for section_name, section_data in sections.items():
+                print(f"DEBUG - Processing section: {section_name}")
+
+                # Extract individual fields
+                individual_fields = section_data.get("individual_fields", {})
+                for field_name, field_value in individual_fields.items():
+                    flask_data["form_fields"].append({
+                        "field_name": field_name
+                    })
+
+                # Extract tables
+                section_tables = section_data.get("tables", [])
+                for table in section_tables:
+                    flask_data["tables"].append({
+                        "table_name": table.get("table_name", "Unknown Table"),
+                        "headers": table.get("headers", [])
+                    })
+
+        # Process multiple records format
+        multiple_records = main_content.get("multiple_records", [])
+        for record in multiple_records:
+            record_data = record.get("record_data", {})
+
+            # Add record-level fields as form fields
+            for field_name, field_value in record_data.items():
+                if field_name != "tables":  # Skip tables key
+                    flask_data["form_fields"].append({
+                        "field_name": field_name
+                    })
+
+            # Add record-level tables
+            record_tables = record_data.get("tables", [])
+            for table in record_tables:
+                flask_data["tables"].append({
+                    "table_name": table.get("table_name", "Unknown Table"),
+                    "headers": table.get("headers", [])
+                })
+
+        # Update extraction summary
+        flask_data["extraction_summary"].update({
+            "total_fields": len(flask_data["form_fields"]),
+            "total_tables": len(flask_data["tables"]),
+            "confidence_score": extraction_summary.get("fields_extracted_high_confidence", 0) / max(extraction_summary.get("total_fields_attempted", 1), 1),
+            "document_type": doc_metadata.get("document_type", "unknown"),
+            "extraction_notes": f"Converted from focused format. Original confidence: {doc_metadata.get('confidence', 'unknown')}"
+        })
+
+        print(f"DEBUG - Conversion complete: {len(flask_data['form_fields'])} fields, {len(flask_data['tables'])} tables")
+
+        return flask_data
+
     def _prepare_feedback_context(self, user_feedback: str, feedback_history: list = None) -> str:
         """Prepare user feedback with proper context and instructions including all historical feedback"""
         
